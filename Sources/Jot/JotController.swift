@@ -13,6 +13,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     private var contentStack: NSStackView!
     private var statusItem: NSStatusItem!
     private var keyMonitor: Any?
+    private var toolbar: ToolbarView!
     /// Per-tab undo, so ⌘Z after a tab switch never replays another note's ranges.
     private let undoManagers = (0..<NoteStore.tabCount).map { _ in UndoManager() }
     private var selections = Array(repeating: NSRange(location: 0, length: 0), count: NoteStore.tabCount)
@@ -28,6 +29,15 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         NSApp.mainMenu = MainMenu.build()
         buildPanel()
         rebuildCommands()
+        toolbar = ToolbarView(lookup: { [unowned self] id in self.commands.first { $0.id == id } },
+                              run: { [unowned self] id in self.run(id) })
+        toolbar.tabs.onSelect = { [unowned self] in self.selectTab($0) }
+        toolbar.tabs.populateMenu = { [unowned self] i, menu in
+            let pinned = self.store.state.pinned[i]
+            menu.addItem(withTitle: pinned ? "Unpin" : "Pin", action: #selector(self.pinFromMenu(_:)), keyEquivalent: "").tag = i
+            menu.items.forEach { $0.target = self }
+        }
+        insertChromeRow(toolbar)
         buildStatusItem()
         store.onSaveResult = { [weak self] in self?.showSaveError($0) }
         hotKey.onPress = { [weak self] in self?.toggle() }
@@ -103,12 +113,38 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         editor.setSelectedRange(NSRange(location: location, length: min(saved.length, length - location)))
         editor.wraps = store.state.wrap[i]
         editor.scrollRangeToVisible(editor.selectedRange())
+        refreshChrome()
+    }
+
+    func selectTab(_ i: Int) {
+        guard i != activeTab else { return }
+        rememberSelection()
+        store.setText(editor.string, tab: activeTab)
+        store.updateState { $0.activeTab = i }
+        if store.reloadIfChangedOnDisk(i) { discardUndo(i) }
+        loadTab(i)
+    }
+
+    func togglePin(_ i: Int) {
+        store.updateState { $0.pinned[i].toggle() }
+        refreshChrome()
+    }
+
+    @objc private func pinFromMenu(_ sender: NSMenuItem) { togglePin(sender.tag) }
+
+    func refreshChrome() {
+        guard let toolbar else { return }
+        let texts = (0..<NoteStore.tabCount).map(store.text)
+        toolbar.tabs.update(labels: texts.enumerated().map { NoteLabel.make(text: $1, index: $0) },
+                            empty: texts.map(\.isEmpty), pinned: store.state.pinned, active: activeTab)
+        toolbar.update(wraps: store.state.wrap[activeTab])
     }
 
     func toggleWrap() {
         let tab = activeTab
         store.updateState { $0.wrap[tab].toggle() }
         editor.wraps = store.state.wrap[tab]
+        refreshChrome()
     }
 
     func promptSplit() {
@@ -230,6 +266,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
 
     func textDidChange(_ notification: Notification) {
         store.setText(editor.string, tab: activeTab)
+        refreshChrome()
     }
 
     private func showSaveError(_ error: Error?) {

@@ -24,7 +24,34 @@ struct Command {
 
 extension JotController {
     func makeCommands() -> [Command] {
-        editCommands() + textCommands() + appCommands()
+        noteCommands() + editCommands() + textCommands() + tabCommands() + appCommands()
+    }
+
+    func noteCommands() -> [Command] {
+        let pinnedReason: () -> String? = { [unowned self] in self.store.state.pinned[self.activeTab] ? "Unpin to clear" : nil }
+        return [
+            Command(id: "clear", title: "Clear Note", group: .note, keys: [KeyCombo(kVK_Delete, .command)],
+                    disabledReason: pinnedReason) { [unowned self] in self.editor.clearAll() },
+            Command(id: "copyClear", title: "Copy & Clear Note", group: .note, keys: [KeyCombo(kVK_ANSI_C, [.command, .shift])],
+                    disabledReason: pinnedReason) { [unowned self] in
+                guard !self.editor.string.isEmpty else { return }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(self.editor.string, forType: .string)
+                self.editor.clearAll()
+            },
+            Command(id: "pin", title: "Pin / Unpin Tab", group: .note, keys: [KeyCombo(kVK_ANSI_P, .command)]) { [unowned self] in
+                self.togglePin(self.activeTab)
+            },
+        ]
+    }
+
+    func tabCommands() -> [Command] {
+        let digits = [kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3, kVK_ANSI_4, kVK_ANSI_5, kVK_ANSI_6, kVK_ANSI_7]
+        return (0..<NoteStore.tabCount).map { i in
+            Command(id: "tab\(i + 1)", title: "Go to Tab \(i + 1)", group: .tabs, keys: [KeyCombo(digits[i], .command)]) { [unowned self] in
+                self.selectTab(i)
+            }
+        }
     }
 
     func editCommands() -> [Command] {
