@@ -19,8 +19,8 @@ notes. Swift package, AppKit, no third-party dependencies, macOS 14+. What's nex
 
 ## Layout
 
-- `Sources/JotCore/` — pure Foundation: text transforms, line operations, fuzzy match, the
-  hotkey toggle rule, persistence. **Every unit test lives here**; keep AppKit out of it.
+- `Sources/JotCore/` — Foundation/CoreGraphics only: text transforms, line operations, fuzzy
+  match, the hotkey toggle rule, panel placement, persistence. **Every unit test lives here**; keep AppKit out of it.
 - `Sources/Jot/` — the AppKit executable. `JotController` owns the panel, store, hotkey and
   tabs; `Commands.swift` is the command registry.
 - `Tests/JotCoreTests/` — XCTest, `swift test`.
