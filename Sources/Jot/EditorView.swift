@@ -60,4 +60,48 @@ final class EditorView: NSTextView {
         setSelectedRange(e.selection)
         scrollRangeToVisible(e.selection)
     }
+
+    var fullRange: NSRange { NSRange(location: 0, length: (string as NSString).length) }
+
+    /// Runs `f` on the selection, or the whole note when nothing is selected.
+    func transform(_ f: (String) -> String) {
+        let sel = selectedRange()
+        let whole = sel.length == 0
+        let range = whole ? fullRange : sel
+        let old = (string as NSString).substring(with: range)
+        let new = f(old)
+        guard new != old else { return }
+        let newLength = (new as NSString).length
+        apply(TextEdit(range: range, replacement: new,
+                       selection: whole ? NSRange(location: min(sel.location, newLength), length: 0)
+                                        : NSRange(location: range.location, length: newLength)))
+    }
+
+    func indentLines() { apply(LineOps.indent(string, selection: selectedRange(), unit: indentUnit)) }
+    func outdentLines() { apply(LineOps.outdent(string, selection: selectedRange(), width: indentWidth)) }
+    func moveLines(up: Bool) {
+        let edit = up ? LineOps.moveUp(string, selection: selectedRange()) : LineOps.moveDown(string, selection: selectedRange())
+        if let edit { apply(edit) }
+    }
+    func duplicateLines() { apply(LineOps.duplicate(string, selection: selectedRange())) }
+    func selectLines() { setSelectedRange(LineOps.selectLine(string, selection: selectedRange())) }
+
+    func pasteStrippingGutter() {
+        guard let raw = NSPasteboard.general.string(forType: .string) else { return }
+        let text = TextActions.stripQuoteGutter(raw)
+        let sel = selectedRange()
+        apply(TextEdit(range: sel, replacement: text,
+                       selection: NSRange(location: sel.location + (text as NSString).length, length: 0)))
+    }
+
+    func clearAll() {
+        guard fullRange.length > 0 else { return }
+        apply(TextEdit(range: fullRange, replacement: "", selection: NSRange(location: 0, length: 0)))
+    }
+
+    /// Tab: indent unit at the caret, or indent every touched line when there is a selection.
+    override func insertTab(_ sender: Any?) {
+        if selectedRange().length == 0 { insertText(indentUnit, replacementRange: selectedRange()) } else { indentLines() }
+    }
+    override func insertBacktab(_ sender: Any?) { outdentLines() }
 }

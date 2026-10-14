@@ -105,6 +105,28 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         editor.scrollRangeToVisible(editor.selectedRange())
     }
 
+    func toggleWrap() {
+        let tab = activeTab
+        store.updateState { $0.wrap[tab].toggle() }
+        editor.wraps = store.state.wrap[tab]
+    }
+
+    func promptSplit() {
+        let alert = NSAlert()
+        alert.messageText = "Split on delimiter"
+        alert.addButton(withTitle: "Split")
+        alert.addButton(withTitle: "Cancel")
+        let field = NSTextField(string: ",")
+        field.frame = NSRect(x: 0, y: 0, width: 220, height: 24)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        alert.beginSheetModal(for: panel) { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            let delimiter = field.stringValue
+            self.editor.transform { TextActions.split($0, on: delimiter) }
+        }
+    }
+
     func rememberSelection() { selections[activeTab] = editor.selectedRange() }
 
     func discardUndo(_ tab: Int) { undoManagers[tab].removeAllActions() }
