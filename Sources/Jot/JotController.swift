@@ -14,6 +14,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     private var statusItem: NSStatusItem!
     private var keyMonitor: Any?
     private var toolbar: ToolbarView!
+    private(set) var palette: PaletteView!
     /// Per-tab undo, so ⌘Z after a tab switch never replays another note's ranges.
     private let undoManagers = (0..<NoteStore.tabCount).map { _ in UndoManager() }
     private var selections = Array(repeating: NSRange(location: 0, length: 0), count: NoteStore.tabCount)
@@ -38,6 +39,18 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
             menu.items.forEach { $0.target = self }
         }
         insertChromeRow(toolbar)
+        palette = PaletteView(commands: { [unowned self] in self.commands },
+                              perform: { [unowned self] in self.perform($0) })
+        palette.onClose = { [unowned self] in self.panel.makeFirstResponder(self.editor) }
+        palette.translatesAutoresizingMaskIntoConstraints = false
+        let content = panel.contentView!
+        content.addSubview(palette)
+        NSLayoutConstraint.activate([
+            palette.topAnchor.constraint(equalTo: content.safeAreaLayoutGuide.topAnchor, constant: 36),
+            palette.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            palette.widthAnchor.constraint(equalTo: content.widthAnchor, multiplier: 0.8),
+            palette.heightAnchor.constraint(equalToConstant: 280),
+        ])
         buildStatusItem()
         store.onSaveResult = { [weak self] in self?.showSaveError($0) }
         hotKey.onPress = { [weak self] in self?.toggle() }
@@ -181,6 +194,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     /// Returns true when the event was consumed.
     func handleKey(_ event: NSEvent) -> Bool {
         let combo = KeyCombo(event: event)
+        if palette.isOpen { return palette.handleKey(combo) }
         guard let command = commands.first(where: { $0.keys.contains(combo) }) else { return false }
         perform(command)
         return true
@@ -294,9 +308,24 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
-        menu.addItem(withTitle: "Show jot", action: #selector(showFromMenu), keyEquivalent: "").target = self
+        menu.autoenablesItems = false
+        menu.addItem(withTitle: "Show jot  \(store.state.settings.hotKey.display)", action: #selector(showFromMenu), keyEquivalent: "").target = self
+        if !hotKeyOK {
+            let warning = NSMenuItem(title: "\(store.state.settings.hotKey.display) is taken — choose another in Settings", action: nil, keyEquivalent: "")
+            warning.isEnabled = false
+            menu.addItem(warning)
+        }
+        for group in Command.Group.allCases where group != .app {
+            menu.addItem(.separator())
+            let parent = NSMenuItem(title: group.rawValue, action: nil, keyEquivalent: "")
+            let sub = NSMenu()
+            sub.autoenablesItems = false
+            commands.filter { $0.group == group }.forEach { sub.addItem(CommandMenuItem($0)) }
+            parent.submenu = sub
+            menu.addItem(parent)
+        }
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit jot", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        commands.filter { $0.group == .app && $0.id != "hide" }.forEach { menu.addItem(CommandMenuItem($0)) }
     }
 
     @objc private func showFromMenu() { show() }
