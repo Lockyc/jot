@@ -6,12 +6,16 @@ links:
   - rel: see-also
     to: README.md
     note: human-facing counterpart — what jot is and how to build it
+  - rel: see-also
+    to: docs/FOLLOWUPS.md
+    note: deferred work — what is next
 ---
 
 # jot — agent notes
 
 Hotkey-toggled macOS scratchpad: a menu-bar app with a floating panel holding seven plain-text
-notes. Swift package, AppKit, no third-party dependencies, macOS 14+.
+notes. Swift package, AppKit, no third-party dependencies, macOS 14+. What's next:
+[docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
 
 ## Layout
 
