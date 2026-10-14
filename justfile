@@ -13,3 +13,28 @@ test:
 gate:
     swift build
     swift test
+
+app := "build/jot.app"
+
+# Build build/jot.app (ad-hoc signed, version from VERSION)
+bundle:
+    swift build -c release --product Jot
+    rm -rf {{app}}
+    mkdir -p {{app}}/Contents/MacOS
+    cp "$(swift build -c release --show-bin-path)/Jot" {{app}}/Contents/MacOS/Jot
+    cp Support/Info.plist {{app}}/Contents/Info.plist
+    plutil -replace CFBundleShortVersionString -string "$(cat VERSION)" {{app}}/Contents/Info.plist
+    plutil -replace CFBundleVersion -string "$(cat VERSION)" {{app}}/Contents/Info.plist
+    codesign --force --sign - {{app}}
+
+# Build and launch the local bundle
+run: bundle
+    pkill -x Jot || true
+    open {{app}}
+
+# Install to /Applications and launch
+install: bundle
+    pkill -x Jot || true
+    rm -rf /Applications/jot.app
+    cp -R {{app}} /Applications/jot.app
+    open /Applications/jot.app
