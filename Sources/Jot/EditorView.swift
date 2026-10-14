@@ -35,14 +35,16 @@ final class EditorView: NSTextView {
 
     var wraps: Bool = true {
         didSet {
-            guard let container = textContainer else { return }
+            guard wraps != oldValue, let container = textContainer else { return }
             if wraps {
                 isHorizontallyResizable = false
-                container.widthTracksTextView = true
-                container.containerSize = NSSize(width: enclosingScrollView?.contentSize.width ?? frame.width,
-                                                 height: CGFloat.greatestFiniteMagnitude)
-                enclosingScrollView?.hasHorizontalScroller = false
+                let width = enclosingScrollView?.contentSize.width ?? frame.width
                 if let w = enclosingScrollView?.contentSize.width { setFrameSize(NSSize(width: w, height: frame.height)) }
+                // A width-tracking container sits inside the insets; match what tracking would set.
+                container.containerSize = NSSize(width: width - 2 * textContainerInset.width,
+                                                 height: CGFloat.greatestFiniteMagnitude)
+                container.widthTracksTextView = true
+                enclosingScrollView?.hasHorizontalScroller = false
             } else {
                 isHorizontallyResizable = true
                 container.widthTracksTextView = false

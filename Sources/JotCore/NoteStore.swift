@@ -22,7 +22,7 @@ public final class NoteStore {
         self.debounce = debounce
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let urls = (0..<Self.tabCount).map { Self.noteURL(in: folder, $0) }
-        texts = urls.map { (try? String(contentsOf: $0, encoding: .utf8)) ?? "" }
+        texts = urls.map(Self.readNote)
         diskStamps = urls.map(Self.modificationDate)
         if let data = try? Data(contentsOf: Self.stateURL(in: folder)),
            let decoded = try? JSONDecoder().decode(JotState.self, from: data) {
@@ -34,6 +34,17 @@ public final class NoteStore {
 
     static func noteURL(in folder: URL, _ tab: Int) -> URL { folder.appendingPathComponent("\(tab + 1).txt") }
     static func stateURL(in folder: URL) -> URL { folder.appendingPathComponent("state.json") }
+    /// A missing note is empty. A note saved elsewhere in another encoding is decoded (sniffed,
+    /// else Latin-1, which accepts any bytes) rather than shown blank, since the next save
+    /// overwrites the file with whatever the editor holds.
+    static func readNote(_ url: URL) -> String {
+        guard let data = try? Data(contentsOf: url) else { return "" }
+        if let utf8 = String(data: data, encoding: .utf8) { return utf8 }
+        var encoding = String.Encoding.utf8
+        if let sniffed = try? String(contentsOf: url, usedEncoding: &encoding) { return sniffed }
+        return String(data: data, encoding: .isoLatin1) ?? ""
+    }
+
     static func modificationDate(_ url: URL) -> Date? {
         (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
     }
@@ -65,7 +76,7 @@ public final class NoteStore {
         let url = noteURL(tab)
         let stamp = Self.modificationDate(url)
         guard stamp != diskStamps[tab] else { return false }
-        texts[tab] = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        texts[tab] = Self.readNote(url)
         diskStamps[tab] = stamp
         return true
     }

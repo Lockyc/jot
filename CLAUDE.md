@@ -30,7 +30,8 @@ notes. Swift package, AppKit, no third-party dependencies, macOS 14+.
   it instead, so the panel stays key.
 - **`Commands.swift` is the single source for every action's title, shortcut and availability.**
   The key monitor, palette, toolbar buttons and status menu all read it; a new action is one
-  registry entry and nothing else. Tab/⇧Tab are the exception — `EditorView.insertTab`/
+  registry entry and nothing else. Whether a key reaches the registry at all (editor focused, no
+  IME composition, palette not focused) is `KeyRouting.route`. Tab/⇧Tab are the exception — `EditorView.insertTab`/
   `insertBacktab` — and the registry carries them only as a `hint`.
 - Notes are plain files the user greps and edits: `~/Documents/jot/1.txt`…`7.txt` plus
   `state.json`. No sync of any kind.

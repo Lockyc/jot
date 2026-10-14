@@ -13,6 +13,12 @@ final class PaletteView: NSVisualEffectView, NSTableViewDataSource, NSTableViewD
 
     var isOpen: Bool { !isHidden }
 
+    /// True while the search field is being edited (its field editor is first responder).
+    var hasFocus: Bool {
+        guard let editor = window?.firstResponder as? NSTextView, editor.isFieldEditor else { return false }
+        return editor.delegate === field
+    }
+
     init(commands: @escaping () -> [Command], perform: @escaping (Command) -> Void) {
         self.commands = commands
         self.perform = perform

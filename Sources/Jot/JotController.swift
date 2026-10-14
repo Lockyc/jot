@@ -75,11 +75,16 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         }
     }
 
+    /// Picks up an outside edit to the visible note before anything reads or rewrites the editor:
+    /// on show, when the panel becomes key (clicked back into, no hotkey), and before every command.
+    func reloadActiveIfChangedOnDisk() {
+        guard store.reloadIfChangedOnDisk(activeTab) else { return }
+        discardUndo(activeTab)
+        loadTab(activeTab)
+    }
+
     func show() {
-        if store.reloadIfChangedOnDisk(activeTab) {
-            undoManagers[activeTab].removeAllActions()
-            loadTab(activeTab)
-        }
+        reloadActiveIfChangedOnDisk()
         // activate(ignoringOtherApps:) rather than the cooperative activate(): an accessory app
         // summoned by a hotkey is not handed activation by the frontmost app.
         NSApp.activate(ignoringOtherApps: true)
@@ -88,6 +93,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     }
 
     func hide() {
+        if palette.isOpen { palette.close() }
         flush()
         panel.orderOut(nil)
         NSApp.hide(nil)
@@ -122,6 +128,8 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     // MARK: Tabs
 
     func loadTab(_ i: Int) {
+        // Close any open typing-undo group before the buffer changes under it.
+        editor.breakUndoCoalescing()
         editor.string = store.text(i)
         let length = (editor.string as NSString).length
         let saved = selections[i]
@@ -186,6 +194,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     // MARK: Commands
 
     func perform(_ command: Command) {
+        reloadActiveIfChangedOnDisk()
         if command.disabledReason() == nil { command.run() } else { NSSound.beep() }
     }
 
@@ -197,10 +206,20 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     /// Returns true when the event was consumed.
     func handleKey(_ event: NSEvent) -> Bool {
         let combo = KeyCombo(event: event)
-        if palette.isOpen { return palette.handleKey(combo) }
-        guard let command = commands.first(where: { $0.keys.contains(combo) }) else { return false }
-        perform(command)
-        return true
+        switch KeyRouting.route(paletteOpen: palette.isOpen, paletteFocused: palette.hasFocus,
+                                editorFocused: panel.firstResponder === editor, composing: editor.hasMarkedText()) {
+        case .palette:
+            return palette.handleKey(combo)
+        case .closePalette:
+            palette.close()
+            return handleKey(event)
+        case .passThrough:
+            return false
+        case .commands:
+            guard let command = commands.first(where: { $0.keys.contains(combo) }) else { return false }
+            perform(command)
+            return true
+        }
     }
 
     private func installKeyMonitor() {
@@ -269,6 +288,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         hide()
         return false
     }
+    func windowDidBecomeKey(_ notification: Notification) { reloadActiveIfChangedOnDisk() }
     func windowDidMove(_ notification: Notification) { saveFrame() }
     func windowDidResize(_ notification: Notification) { saveFrame() }
     private func saveFrame() {

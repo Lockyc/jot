@@ -88,6 +88,12 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.text(0), "unsaved")
     }
 
+    func testNonUTF8NoteIsDecodedNotBlanked() throws {
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try "café".data(using: .isoLatin1)!.write(to: dir.appendingPathComponent("1.txt"))
+        XCTAssertEqual(NoteStore(folder: dir).text(0), "café")
+    }
+
     func testNoteLabel() {
         XCTAssertEqual(NoteLabel.make(text: "", index: 3), "4")
         XCTAssertEqual(NoteLabel.make(text: "\n  \n  Shopping list\nmilk", index: 0), "Shopping list")

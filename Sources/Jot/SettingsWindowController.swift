@@ -3,7 +3,7 @@ import Carbon.HIToolbox
 import JotCore
 import ServiceManagement
 
-final class SettingsWindowController: NSWindowController {
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private unowned let controller: JotController
     private let hotKeyButton = NSButton(title: "", target: nil, action: nil)
     private let hotKeyStatus = NSTextField(labelWithString: "")
@@ -24,6 +24,7 @@ final class SettingsWindowController: NSWindowController {
         window.level = .floating
         window.isReleasedWhenClosed = false
         super.init(window: window)
+        window.delegate = self
 
         hotKeyButton.target = self
         hotKeyButton.action = #selector(recordHotKey)
@@ -89,11 +90,14 @@ final class SettingsWindowController: NSWindowController {
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
     }
 
+    /// Recording ends on a captured shortcut, ⎋, or the window closing/losing focus — never left
+    /// running, because while it runs the global hotkey is unregistered.
     @objc private func recordHotKey() {
+        guard recorder == nil else { return }
         controller.hotKey.unregister()
         hotKeyButton.title = "Press a shortcut…  (⎋ cancels)"
         recorder = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self else { return event }
+            guard let self, event.window === self.window else { return event }
             let flags = event.modifierFlags.intersection(KeyCombo.relevant)
             if Int(event.keyCode) == kVK_Escape && flags.isEmpty {
                 self.stopRecording()
@@ -110,6 +114,9 @@ final class SettingsWindowController: NSWindowController {
             return nil
         }
     }
+
+    func windowWillClose(_ notification: Notification) { if recorder != nil { stopRecording() } }
+    func windowDidResignKey(_ notification: Notification) { if recorder != nil { stopRecording() } }
 
     private func stopRecording() {
         if let recorder { NSEvent.removeMonitor(recorder) }
