@@ -15,6 +15,9 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     private var keyMonitor: Any?
     private var toolbar: ToolbarView!
     private(set) var palette: PaletteView!
+    private lazy var settingsWindow = SettingsWindowController(controller: self)
+
+    func openSettings() { settingsWindow.present() }
     /// Per-tab undo, so ⌘Z after a tab switch never replays another note's ranges.
     private let undoManagers = (0..<NoteStore.tabCount).map { _ in UndoManager() }
     private var selections = Array(repeating: NSRange(location: 0, length: 0), count: NoteStore.tabCount)

@@ -96,6 +96,9 @@ extension JotController {
                 self.show()
                 self.palette.open()
             },
+            Command(id: "settings", title: "Settings…", group: .app, keys: [KeyCombo(kVK_ANSI_Comma, .command)]) { [unowned self] in
+                self.openSettings()
+            },
             Command(id: "hide", title: "Hide jot", group: .app, keys: [KeyCombo(kVK_Escape)]) { [unowned self] in self.hide() },
             Command(id: "quit", title: "Quit jot", group: .app, keys: [KeyCombo(kVK_ANSI_Q, .command)]) { NSApp.terminate(nil) },
         ]
