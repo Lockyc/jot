@@ -50,4 +50,62 @@ public enum TextActions {
             return lines.map { isBlank($0) ? "" : String($0.dropFirst(common.count)) }
         }
     }
+
+    public static func trimTrailingWhitespace(_ s: String) -> String {
+        transformLines(s) { lines in
+            lines.map { line in
+                var l = line
+                while let c = l.last, isIndent(c) { l.removeLast() }
+                return l
+            }
+        }
+    }
+
+    public static func sortLines(_ s: String, descending: Bool) -> String {
+        transformLines(s) { lines in
+            lines.sorted {
+                let order = $0.localizedStandardCompare($1)
+                return descending ? order == .orderedDescending : order == .orderedAscending
+            }
+        }
+    }
+
+    public static func removeDuplicateLines(_ s: String) -> String {
+        transformLines(s) { lines in
+            var seen = Set<String>()
+            return lines.filter { seen.insert($0).inserted }
+        }
+    }
+
+    public static func removeBlankLines(_ s: String) -> String {
+        transformLines(s) { lines in lines.filter { !isBlank($0) } }
+    }
+
+    public static func joinLines(_ s: String) -> String {
+        transformLines(s) { lines in
+            [lines.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " ")]
+        }
+    }
+
+    public static func split(_ s: String, on delimiter: String) -> String {
+        guard !delimiter.isEmpty else { return s }
+        return s.components(separatedBy: delimiter)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .joined(separator: "\n")
+    }
+
+    public static func uppercase(_ s: String) -> String { s.uppercased() }
+    public static func lowercase(_ s: String) -> String { s.lowercased() }
+    public static func titleCase(_ s: String) -> String { s.capitalized }
+
+    public static func numberLines(_ s: String) -> String {
+        transformLines(s) { lines in
+            var n = 0
+            return lines.map { line in
+                guard !isBlank(line) else { return line }
+                n += 1
+                return "\(n). \(line)"
+            }
+        }
+    }
 }
