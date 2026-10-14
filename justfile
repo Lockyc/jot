@@ -28,13 +28,28 @@ bundle:
     codesign --force --sign - {{app}}
 
 # Build and launch the local bundle
-run: bundle
-    pkill -x Jot || true
-    open {{app}}
+run: bundle quit
+    @just launch {{app}}
 
 # Install to /Applications and launch
-install: bundle
-    pkill -x Jot || true
+install: bundle quit
     rm -rf /Applications/jot.app
     cp -R {{app}} /Applications/jot.app
-    open /Applications/jot.app
+    @just launch /Applications/jot.app
+
+# Quits any running Jot, force-killing one still alive after 3s.
+[private]
+quit:
+    #!/usr/bin/env bash
+    killall Jot 2>/dev/null || exit 0
+    for _ in {1..30}; do pgrep -x Jot >/dev/null || exit 0; sleep 0.1; done
+    killall -9 Jot 2>/dev/null
+    while pgrep -x Jot >/dev/null; do sleep 0.1; done
+
+# Opens the app at `path`, retrying for up to 5s: LaunchServices keeps a quit Jot on its
+# books briefly after the process is gone, and `open` fails with error -600 until it lets go.
+[private]
+launch path:
+    #!/usr/bin/env bash
+    for _ in {1..20}; do open "{{path}}" 2>/dev/null && exit 0; sleep 0.25; done
+    open "{{path}}"
