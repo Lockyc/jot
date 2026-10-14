@@ -1,0 +1,13 @@
+name    = "jot"
+summary = "Hotkey-toggled macOS scratchpad — seven plain-text tabs, code-editor line ops, and text actions including stripping Claude's quote gutter"
+kind    = "app"
+status  = "active"
+tags    = ["macos", "notes", "scratchpad", "menu-bar", "productivity"]
+stack   = ["swift"]
+
+[github]
+topics_extra = ["appkit", "swift", "plain-text", "hotkey", "tot"]
+
+[fleet]
+exempt      = ["ci", "installer"]
+exempt_note = "macOS-only personal app: the local `just gate` covers the one platform it ships on, and `just install` is the install path"
