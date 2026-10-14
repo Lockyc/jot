@@ -88,6 +88,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         // activate(ignoringOtherApps:) rather than the cooperative activate(): an accessory app
         // summoned by a hotkey is not handed activation by the frontmost app.
         NSApp.activate(ignoringOtherApps: true)
+        centreOnCursor()
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(editor)
     }
@@ -245,7 +246,6 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         panel.isReleasedWhenClosed = false
         panel.minSize = NSSize(width: 320, height: 200)
         panel.delegate = self
-        if store.state.panelFrame == nil { panel.center() }
 
         banner = NSTextField(labelWithString: "")
         banner.drawsBackground = true
@@ -282,6 +282,14 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     func insertChromeRow(_ view: NSView) {
         contentStack.insertArrangedSubview(view, at: 1)
         view.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
+    }
+
+    private func centreOnCursor() {
+        let cursor = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(cursor, $0.frame, false) }) ?? NSScreen.main
+        else { return }
+        panel.setFrame(PanelPlacement.frame(size: panel.frame.size, centredOn: cursor, within: screen.visibleFrame),
+                       display: false)
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
