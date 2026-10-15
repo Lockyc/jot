@@ -1,12 +1,12 @@
 name    = "jot"
-summary = "Hotkey-toggled macOS scratchpad — seven plain-text tabs, code-editor line ops, and text actions including stripping Claude's quote gutter"
+summary = "Hotkey-toggled macOS scratchpad — plain-text tabs, code-editor line ops, and text actions including stripping Claude's quote gutter"
 kind    = "app"
 status  = "active"
 tags    = ["macos", "notes", "scratchpad", "menu-bar", "productivity"]
 stack   = ["swift"]
 
 [github]
-topics_extra = ["appkit", "swift", "plain-text", "hotkey", "tot"]
+topics_extra = ["appkit", "swift", "plain-text", "hotkey"]
 
 [fleet]
 exempt      = ["ci", "installer"]
