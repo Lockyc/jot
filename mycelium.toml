@@ -10,5 +10,5 @@ topics_extra = ["appkit", "swift", "plain-text", "hotkey"]
 
 # "profile" keeps jot off the lockyc profile README until its first release.
 [fleet]
-exempt      = ["ci", "installer", "profile"]
-exempt_note = "macOS-only personal app: the local `just gate` covers the one platform it ships on, and `just install` is the install path"
+exempt      = ["installer", "profile"]
+exempt_note = "macOS-only personal app: `just install` is the install path"
