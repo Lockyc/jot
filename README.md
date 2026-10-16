@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/lockyc/jot)](LICENSE)
 
 A hotkey scratchpad for macOS. One global shortcut shows and hides a floating panel of seven
-plain-text notes — whatever is selected, whatever app is in front. Built for assembling text
+plain-text notes, from whatever app is in front. Built for assembling text
 from small pastes, with code-editor line operations and quick text actions.
 
 ## Install
