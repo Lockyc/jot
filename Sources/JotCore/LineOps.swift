@@ -112,6 +112,75 @@ public enum LineOps {
                         selection: NSRange(location: sel.location + length(block) + 1, length: 0))
     }
 
+    static let bulletMarkers = ["- ", "* "]
+
+    /// What a new line after `caret` starts with: the indent before the caret, plus the bullet
+    /// marker when the caret is past one.
+    static func continuation(_ t: LineTable, line: Int, caret: Int) -> (indent: String, marker: String?) {
+        let before = t.ns.substring(with: NSRange(location: t.starts[line], length: caret - t.starts[line]))
+        let indent = String(before.prefix(while: { $0 == " " || $0 == "\t" }))
+        let marker = bulletMarkers.first { before.dropFirst(indent.count).hasPrefix($0) }
+        return (indent, marker)
+    }
+
+    /// Return: carry the line's indent and bullet onto the new line. Return on a bullet with
+    /// nothing after it ends the list, leaving the line blank.
+    public static func newline(_ text: String, selection sel: NSRange) -> TextEdit {
+        let t = LineTable(text), line = t.line(at: sel.location)
+        let (indent, marker) = continuation(t, line: line, caret: sel.location)
+        if let marker, sel.length == 0,
+           t.content(line).trimmingCharacters(in: .whitespaces) == marker.trimmingCharacters(in: .whitespaces) {
+            let span = t.span(line, line)
+            return TextEdit(range: span, replacement: "", selection: NSRange(location: span.location, length: 0))
+        }
+        let insert = "\n" + indent + (marker ?? "")
+        return TextEdit(range: sel, replacement: insert, selection: NSRange(location: sel.location + length(insert), length: 0))
+    }
+
+    /// ⌘↩: a new line below the last selected line, with that line's indent and bullet.
+    public static func insertLineBelow(_ text: String, selection sel: NSRange) -> TextEdit {
+        let t = LineTable(text), line = t.lines(covering: sel).upperBound, end = t.end(line)
+        let (indent, marker) = continuation(t, line: line, caret: end)
+        let insert = "\n" + indent + (marker ?? "")
+        return TextEdit(range: NSRange(location: end, length: 0), replacement: insert,
+                        selection: NSRange(location: end + length(insert), length: 0))
+    }
+
+    /// Backspace with the caret in a line's leading spaces deletes back to the previous indent
+    /// stop. nil = not in leading spaces; the native delete applies.
+    public static func deleteBackward(_ text: String, selection sel: NSRange, width: Int) -> TextEdit? {
+        guard sel.length == 0, width > 0 else { return nil }
+        let t = LineTable(text), start = t.starts[t.line(at: sel.location)], column = sel.location - start
+        guard column > 0, t.ns.substring(with: NSRange(location: start, length: column)).allSatisfy({ $0 == " " }) else { return nil }
+        let stop = (column - 1) / width * width
+        return TextEdit(range: NSRange(location: start + stop, length: column - stop), replacement: "",
+                        selection: NSRange(location: start + stop, length: 0))
+    }
+
+    /// ⌘←: the line's first non-blank character, or column 0 when already there.
+    public static func smartLineStart(_ text: String, caret: Int) -> Int {
+        let t = LineTable(text), line = t.line(at: caret), start = t.starts[line]
+        let first = start + length(String(t.content(line).prefix(while: { $0 == " " || $0 == "\t" })))
+        return first == t.end(line) || caret == first ? start : first
+    }
+
+    /// ⇧⌘K: removes every line the selection touches, with one adjoining newline.
+    public static func deleteLines(_ text: String, selection sel: NSRange) -> TextEdit {
+        let t = LineTable(text), r = t.lines(covering: sel)
+        let range: NSRange, caret: Int
+        if r.upperBound + 1 < t.count {
+            range = NSRange(location: t.starts[r.lowerBound], length: t.starts[r.upperBound + 1] - t.starts[r.lowerBound])
+            caret = t.starts[r.lowerBound]
+        } else if r.lowerBound > 0 {
+            range = NSRange(location: t.starts[r.lowerBound] - 1, length: t.ns.length - t.starts[r.lowerBound] + 1)
+            caret = t.starts[r.lowerBound - 1]
+        } else {
+            range = NSRange(location: 0, length: t.ns.length)
+            caret = 0
+        }
+        return TextEdit(range: range, replacement: "", selection: NSRange(location: caret, length: 0))
+    }
+
     /// Whole lines under the selection, newline included; repeating on an exact line selection
     /// extends it by the next line.
     public static func selectLine(_ text: String, selection sel: NSRange) -> NSRange {
