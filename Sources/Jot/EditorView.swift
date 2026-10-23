@@ -86,6 +86,8 @@ final class EditorView: NSTextView {
         if let edit { apply(edit) }
     }
     func duplicateLines() { apply(LineOps.duplicate(string, selection: selectedRange())) }
+    func deleteLines() { apply(LineOps.deleteLines(string, selection: selectedRange())) }
+    func insertLineBelow() { apply(LineOps.insertLineBelow(string, selection: selectedRange())) }
     func selectLines() { setSelectedRange(LineOps.selectLine(string, selection: selectedRange())) }
 
     func pasteStrippingGutter() {
@@ -106,4 +108,36 @@ final class EditorView: NSTextView {
         if selectedRange().length == 0 { insertText(indentUnit, replacementRange: selectedRange()) } else { indentLines() }
     }
     override func insertBacktab(_ sender: Any?) { outdentLines() }
+
+    override func insertNewline(_ sender: Any?) { apply(LineOps.newline(string, selection: selectedRange())) }
+
+    override func deleteBackward(_ sender: Any?) {
+        if let edit = LineOps.deleteBackward(string, selection: selectedRange(), width: indentWidth) { apply(edit) } else { super.deleteBackward(sender) }
+    }
+
+    override func moveToLeftEndOfLine(_ sender: Any?) { smartLineStart(extend: false) { super.moveToLeftEndOfLine(sender) } }
+    override func moveToLeftEndOfLineAndModifySelection(_ sender: Any?) {
+        smartLineStart(extend: true) { super.moveToLeftEndOfLineAndModifySelection(sender) }
+    }
+
+    /// Lets AppKit move to the visual line start first; only when that is the start of the
+    /// logical line (not a wrapped continuation) does ⌘← go to the first non-blank instead.
+    private func smartLineStart(extend: Bool, native: () -> Void) {
+        let before = selectedRange()
+        native()
+        let after = selectedRange()
+        let ns = string as NSString
+        let lineStart = ns.lineRange(for: NSRange(location: after.location, length: 0)).location
+        guard after.location == lineStart else { return }
+        guard extend else {
+            if before.length == 0 { setSelectedRange(NSRange(location: LineOps.smartLineStart(string, caret: before.location), length: 0)) }
+            return
+        }
+        // The anchor is the end AppKit kept fixed; the moving end is the other one.
+        let anchor = NSMaxRange(after)
+        let moving = anchor == before.location ? NSMaxRange(before) : before.location
+        guard ns.lineRange(for: NSRange(location: moving, length: 0)).location == lineStart else { return }
+        let target = LineOps.smartLineStart(string, caret: moving)
+        setSelectedRange(NSRange(location: min(target, anchor), length: abs(anchor - target)))
+    }
 }

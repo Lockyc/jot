@@ -35,6 +35,8 @@ menu bar; it has no Dock icon.
 | Indent / outdent lines | ⇥ / ⇧⇥, ⌘] / ⌘[ |
 | Move line up / down | ⌥↑ / ⌥↓ |
 | Duplicate line or selection | ⌘D |
+| Delete line | ⇧⌘K |
+| Insert line below | ⌘↩ |
 | Select line (repeat to extend) | ⌘L |
 | Toggle word wrap | ⌥Z |
 | Paste without quote gutter | ⌥⌘V |
@@ -42,6 +44,10 @@ menu bar; it has no Dock icon.
 | Dedent · trim trailing whitespace · sort A→Z / Z→A · remove duplicate / blank lines · join lines · split on delimiter · UPPER / lower / Title case · number lines | ⌘K |
 | Find | ⌘F |
 | Settings | ⌘, |
+
+Typing behaves like a code editor: ↩ keeps the line's indent and continues a `- ` or `* `
+bullet (↩ on an empty bullet ends the list), ⌫ in leading spaces removes one indent, and ⌘←
+goes to the first non-blank character, then to column 0.
 
 Text actions work on the selection, or the whole note when nothing is selected, and each is one
 undo step. **Strip quote gutter** removes the `│` / `|` / `▎` / `>` bar that comes along when

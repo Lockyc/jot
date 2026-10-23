@@ -63,6 +63,8 @@ extension JotController {
             Command(id: "moveUp", title: "Move Line Up", group: .edit, keys: [KeyCombo(kVK_UpArrow, .option)]) { [unowned self] in self.editor.moveLines(up: true) },
             Command(id: "moveDown", title: "Move Line Down", group: .edit, keys: [KeyCombo(kVK_DownArrow, .option)]) { [unowned self] in self.editor.moveLines(up: false) },
             Command(id: "duplicate", title: "Duplicate Line / Selection", group: .edit, keys: [KeyCombo(kVK_ANSI_D, .command)]) { [unowned self] in self.editor.duplicateLines() },
+            Command(id: "deleteLine", title: "Delete Line", group: .edit, keys: [KeyCombo(kVK_ANSI_K, [.command, .shift])]) { [unowned self] in self.editor.deleteLines() },
+            Command(id: "lineBelow", title: "Insert Line Below", group: .edit, keys: [KeyCombo(kVK_Return, .command)]) { [unowned self] in self.editor.insertLineBelow() },
             Command(id: "selectLine", title: "Select Line", group: .edit, keys: [KeyCombo(kVK_ANSI_L, .command)]) { [unowned self] in self.editor.selectLines() },
             Command(id: "wrap", title: "Toggle Word Wrap", group: .edit, keys: [KeyCombo(kVK_ANSI_Z, .option)]) { [unowned self] in self.toggleWrap() },
             Command(id: "pasteStripped", title: "Paste Without Quote Gutter", group: .edit, keys: [KeyCombo(kVK_ANSI_V, [.command, .option])]) { [unowned self] in self.editor.pasteStrippingGutter() },
