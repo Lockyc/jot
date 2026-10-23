@@ -37,6 +37,23 @@ final class EditingTests: XCTestCase {
     func testNewlineNeedsSpaceAfterDash() {
         XCTAssertEqual(LineOps.newline("-5", selection: r(2, 0)).replacement, "\n")
     }
+    func testNewlineContinuesNumberedList() {
+        XCTAssertEqual(LineOps.newline("  9. item", selection: r(9, 0)),
+                       TextEdit(range: r(9, 0), replacement: "\n  10. ", selection: r(16, 0)))
+    }
+    func testNewlineContinuesParenNumberedList() {
+        XCTAssertEqual(LineOps.newline("1) a", selection: r(4, 0)).replacement, "\n2) ")
+    }
+    func testNewlineNumberNeedsSpaceAfterDot() {
+        XCTAssertEqual(LineOps.newline("3.14", selection: r(4, 0)).replacement, "\n")
+    }
+    func testNewlineOnEmptyNumberedItemEndsTheList() {
+        XCTAssertEqual(LineOps.newline("1. a\n2. ", selection: r(8, 0)),
+                       TextEdit(range: r(5, 3), replacement: "", selection: r(5, 0)))
+    }
+    func testInsertLineBelowNumbersNextItem() {
+        XCTAssertEqual(LineOps.insertLineBelow("4. a", selection: r(0, 0)).replacement, "\n5. ")
+    }
     func testNewlineOnEmptyBulletEndsTheList() {
         XCTAssertEqual(LineOps.newline("- a\n  - ", selection: r(8, 0)),
                        TextEdit(range: r(4, 4), replacement: "", selection: r(4, 0)))

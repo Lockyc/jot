@@ -112,36 +112,43 @@ public enum LineOps {
                         selection: NSRange(location: sel.location + length(block) + 1, length: 0))
     }
 
-    static let bulletMarkers = ["- ", "* "]
-
-    /// What a new line after `caret` starts with: the indent before the caret, plus the bullet
-    /// marker when the caret is past one.
-    static func continuation(_ t: LineTable, line: Int, caret: Int) -> (indent: String, marker: String?) {
-        let before = t.ns.substring(with: NSRange(location: t.starts[line], length: caret - t.starts[line]))
-        let indent = String(before.prefix(while: { $0 == " " || $0 == "\t" }))
-        let marker = bulletMarkers.first { before.dropFirst(indent.count).hasPrefix($0) }
-        return (indent, marker)
+    /// The list marker opening `s` (`- `, `* `, `3. `, `3) `) and the one the next item takes.
+    static func listMarker(_ s: Substring) -> (current: String, next: String)? {
+        for bullet in ["- ", "* "] where s.hasPrefix(bullet) { return (bullet, bullet) }
+        let digits = s.prefix(while: \.isASCII).prefix(while: \.isNumber)
+        guard (1...9).contains(digits.count), let n = Int(digits) else { return nil }
+        let rest = s.dropFirst(digits.count)
+        guard let delimiter = [". ", ") "].first(where: { rest.hasPrefix($0) }) else { return nil }
+        return (digits + delimiter, "\(n + 1)" + delimiter)
     }
 
-    /// Return: carry the line's indent and bullet onto the new line. Return on a bullet with
-    /// nothing after it ends the list, leaving the line blank.
+    /// What a new line after `caret` starts with: the indent before the caret, plus the next
+    /// list marker when the caret is past one.
+    static func continuation(_ t: LineTable, line: Int, caret: Int) -> (indent: String, marker: (current: String, next: String)?) {
+        let before = t.ns.substring(with: NSRange(location: t.starts[line], length: caret - t.starts[line]))
+        let indent = String(before.prefix(while: { $0 == " " || $0 == "\t" }))
+        return (indent, listMarker(before.dropFirst(indent.count)))
+    }
+
+    /// Return: carry the line's indent and list marker onto the new line. Return on a list item
+    /// with nothing after its marker ends the list, leaving the line blank.
     public static func newline(_ text: String, selection sel: NSRange) -> TextEdit {
         let t = LineTable(text), line = t.line(at: sel.location)
         let (indent, marker) = continuation(t, line: line, caret: sel.location)
         if let marker, sel.length == 0,
-           t.content(line).trimmingCharacters(in: .whitespaces) == marker.trimmingCharacters(in: .whitespaces) {
+           t.content(line).trimmingCharacters(in: .whitespaces) == marker.current.trimmingCharacters(in: .whitespaces) {
             let span = t.span(line, line)
             return TextEdit(range: span, replacement: "", selection: NSRange(location: span.location, length: 0))
         }
-        let insert = "\n" + indent + (marker ?? "")
+        let insert = "\n" + indent + (marker?.next ?? "")
         return TextEdit(range: sel, replacement: insert, selection: NSRange(location: sel.location + length(insert), length: 0))
     }
 
-    /// ⌘↩: a new line below the last selected line, with that line's indent and bullet.
+    /// ⌘↩: a new line below the last selected line, with that line's indent and next list marker.
     public static func insertLineBelow(_ text: String, selection sel: NSRange) -> TextEdit {
         let t = LineTable(text), line = t.lines(covering: sel).upperBound, end = t.end(line)
         let (indent, marker) = continuation(t, line: line, caret: end)
-        let insert = "\n" + indent + (marker ?? "")
+        let insert = "\n" + indent + (marker?.next ?? "")
         return TextEdit(range: NSRange(location: end, length: 0), replacement: insert,
                         selection: NSRange(location: end + length(insert), length: 0))
     }

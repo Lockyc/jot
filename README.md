@@ -45,8 +45,8 @@ menu bar; it has no Dock icon.
 | Find | ⌘F |
 | Settings | ⌘, |
 
-Typing behaves like a code editor: ↩ keeps the line's indent and continues a `- ` or `* `
-bullet (↩ on an empty bullet ends the list), ⌫ in leading spaces removes one indent, and ⌘←
+Typing behaves like a code editor: ↩ keeps the line's indent and continues a `- ` / `* ` bullet
+or a `1. ` / `1) ` numbered list (↩ on an empty item ends the list), ⌫ in leading spaces removes one indent, and ⌘←
 goes to the first non-blank character, then to column 0.
 
 Text actions work on the selection, or the whole note when nothing is selected, and each is one
