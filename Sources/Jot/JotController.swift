@@ -88,7 +88,9 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         // activate(ignoringOtherApps:) rather than the cooperative activate(): an accessory app
         // summoned by a hotkey is not handed activation by the frontmost app.
         NSApp.activate(ignoringOtherApps: true)
-        centreOnCursor()
+        // Only a panel coming on screen moves; one already showing (⌘K, the hotkey from another
+        // app) stays where the user put it.
+        if !panel.isVisible { centreOnCursor() }
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(editor)
     }
