@@ -30,7 +30,7 @@ extension JotController {
     func noteCommands() -> [Command] {
         let pinnedReason: () -> String? = { [unowned self] in self.store.state.pinned[self.activeTab] ? "Unpin to clear" : nil }
         return [
-            Command(id: "clear", title: "Clear Note", group: .note, keys: [KeyCombo(kVK_Delete, .command)],
+            Command(id: "clear", title: "Clear Note", group: .note, keys: [KeyCombo(kVK_Delete, [.command, .shift])],
                     disabledReason: pinnedReason) { [unowned self] in self.editor.clearAll() },
             Command(id: "copyClear", title: "Copy & Clear Note", group: .note, keys: [KeyCombo(kVK_ANSI_C, [.command, .shift])],
                     disabledReason: pinnedReason) { [unowned self] in

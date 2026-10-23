@@ -29,7 +29,7 @@ menu bar; it has no Dock icon.
 
 | Action | Shortcut |
 |---|---|
-| Clear note (⌘Z restores) | ⌘⌫ |
+| Clear note (⌘Z restores) | ⇧⌘⌫ |
 | Copy & clear note | ⇧⌘C |
 | Pin / unpin tab | ⌘P |
 | Indent / outdent lines | ⇥ / ⇧⇥, ⌘] / ⌘[ |
