@@ -35,8 +35,9 @@ notes. Swift package, AppKit, no third-party dependencies, macOS 14+. What's nex
 - **`Commands.swift` is the single source for every action's title, shortcut and availability.**
   The key monitor, palette, toolbar buttons and status menu all read it; a new action is one
   registry entry and nothing else. Whether a key reaches the registry at all (editor focused, no
-  IME composition, palette not focused) is `KeyRouting.route`. Tab/⇧Tab are the exception — `EditorView.insertTab`/
-  `insertBacktab` — and the registry carries them only as a `hint`.
+  IME composition, palette not focused) is `KeyRouting.route`. Editing keys are the exception —
+  `EditorView`'s overrides of Tab/⇧Tab, ↩, ⌫ and ⌘← — and the registry carries only Tab/⇧Tab,
+  as a `hint`.
 - Notes are plain files the user greps and edits: `~/Documents/jot/1.txt`…`7.txt` plus
   `state.json`. No sync of any kind.
 - The README's shortcut table restates the registry; change both together.
