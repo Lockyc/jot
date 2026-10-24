@@ -60,13 +60,16 @@ public enum TextActions {
     /// Narrower than any terminal Claude Code is usable in, so a run of short lines never reads
     /// as wrapped just because its own widest line is short.
     static let minimumWrapWidth = 40
+    /// Claude Code breaks some lines a few columns before the widest one would allow (a copied
+    /// reply broke where the next word would have ended exactly on the widest line's last column).
+    static let wrapSlack = 10
 
     /// Rejoins lines a terminal app hard-wrapped at its width, as Claude Code does: a line joins
     /// the one above when its first word would not have fitted on that line — the wrap condition
-    /// itself, with the widest line standing in for the terminal width. Blank lines, list items,
-    /// headings, quotes, table rows, box-drawn lines and fenced code are never joined. Drops the
-    /// `⏺` reply marker and dedents, treating a first line indented less than the rest as one
-    /// whose margin the selection cut off.
+    /// itself, with the widest line less `wrapSlack` standing in for the terminal width. Blank
+    /// lines, list items, headings, quotes, table rows, box-drawn lines and fenced code are never
+    /// joined. Drops the `⏺` reply marker and dedents, treating a first line indented less than
+    /// the rest as one whose margin the selection cut off.
     public static func unwrap(_ s: String) -> String {
         transformLines(s) { input in
             var lines = input.map { String($0.reversed().drop(while: isIndent).reversed()) }
@@ -76,7 +79,7 @@ public enum TextActions {
             let indent = { (line: String) in line.prefix(while: isIndent).count }
             let cutMargin = lines.count > 1 ? max(0, indent(lines[1]) - indent(lines[0])) : 0
             let measured = lines.indices.map { lines[$0].count + ($0 == 0 ? cutMargin : 0) }
-            let width = max(minimumWrapWidth, measured.max() ?? 0)
+            let width = max(minimumWrapWidth, measured.max() ?? 0) - wrapSlack
 
             var out: [String] = []
             var inFence = false
