@@ -7,8 +7,3 @@ stack   = ["swift"]
 
 [github]
 topics_extra = ["appkit", "swift", "plain-text", "hotkey"]
-
-# "profile" keeps jot off the lockyc profile README until its first release.
-[fleet]
-exempt      = ["profile"]
-exempt_note = "unreleased: off the profile README until its first release"
