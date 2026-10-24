@@ -38,17 +38,76 @@ public enum TextActions {
         return dedent(stripped)
     }
 
+    /// The longest leading-whitespace prefix shared by every non-blank line; nil when all are blank.
+    static func commonIndent<C: Collection>(_ lines: C) -> String? where C.Element == String {
+        let indents = lines.filter { !isBlank($0) }.map { String($0.prefix(while: isIndent)) }
+        guard var common = indents.first else { return nil }
+        for indent in indents.dropFirst() {
+            common = String(zip(common, indent).prefix(while: { $0 == $1 }).map(\.0))
+        }
+        return common
+    }
+
     /// Removes the longest leading-whitespace prefix shared by every non-blank line;
     /// whitespace-only lines come out empty.
     public static func dedent(_ s: String) -> String {
         transformLines(s) { lines in
-            let indents = lines.filter { !isBlank($0) }.map { String($0.prefix(while: isIndent)) }
-            guard var common = indents.first else { return lines.map { _ in "" } }
-            for indent in indents.dropFirst() {
-                common = String(zip(common, indent).prefix(while: { $0 == $1 }).map(\.0))
-            }
+            guard let common = commonIndent(lines) else { return lines.map { _ in "" } }
             return lines.map { isBlank($0) ? "" : String($0.dropFirst(common.count)) }
         }
+    }
+
+    /// Narrower than any terminal Claude Code is usable in, so a run of short lines never reads
+    /// as wrapped just because its own widest line is short.
+    static let minimumWrapWidth = 40
+
+    /// Rejoins lines a terminal app hard-wrapped at its width, as Claude Code does: a line joins
+    /// the one above when its first word would not have fitted on that line — the wrap condition
+    /// itself, with the widest line standing in for the terminal width. Blank lines, list items,
+    /// headings, quotes, table rows, box-drawn lines and fenced code are never joined. Drops the
+    /// `⏺` reply marker and dedents, treating a first line indented less than the rest as one
+    /// whose margin the selection cut off.
+    public static func unwrap(_ s: String) -> String {
+        transformLines(s) { input in
+            var lines = input.map { String($0.reversed().drop(while: isIndent).reversed()) }
+            if let i = lines.first?.firstIndex(where: { !isIndent($0) }), lines[0][i] == "⏺" {
+                lines[0].replaceSubrange(i...i, with: " ")
+            }
+            let indent = { (line: String) in line.prefix(while: isIndent).count }
+            let cutMargin = lines.count > 1 ? max(0, indent(lines[1]) - indent(lines[0])) : 0
+            let measured = lines.indices.map { lines[$0].count + ($0 == 0 ? cutMargin : 0) }
+            let width = max(minimumWrapWidth, measured.max() ?? 0)
+
+            var out: [String] = []
+            var inFence = false
+            for (i, line) in lines.enumerated() {
+                let body = line.drop(while: isIndent)
+                let fence = body.hasPrefix("```") || body.hasPrefix("~~~")
+                if fence { inFence.toggle() }
+                let joins = i > 0 && !fence && !inFence && !body.isEmpty && !isBlank(lines[i - 1])
+                    && !startsBlock(body) && !isRigid(lines[i - 1].drop(while: isIndent))
+                    && measured[i - 1] + 1 + body.prefix(while: { $0 != " " }).count > width
+                if joins { out[out.count - 1] += " " + body } else { out.append(line) }
+            }
+
+            let common = commonIndent(out.dropFirst()) ?? out.first.map { String($0.prefix(while: isIndent)) } ?? ""
+            return out.enumerated().map { i, line in
+                if isBlank(line) { return "" }
+                return String(i == 0 ? line.dropFirst(min(common.count, indent(line))) : line.dropFirst(common.count))
+            }
+        }
+    }
+
+    /// A line that opens its own block in rendered markdown, so it never continues the one above.
+    static func startsBlock(_ body: Substring) -> Bool {
+        LineOps.listMarker(body) != nil || body.hasPrefix("• ") || body.hasPrefix("+ ")
+            || body.hasPrefix("#") || body.hasPrefix(">") || isRigid(body)
+    }
+
+    /// A table row or box-drawn line: laid out by column, so nothing joins onto it either.
+    static func isRigid(_ body: Substring) -> Bool {
+        guard let c = body.unicodeScalars.first else { return false }
+        return c == "|" || (0x2500...0x259F).contains(c.value) || boxMarkers.contains(Character(c))
     }
 
     public static func trimTrailingWhitespace(_ s: String) -> String {
