@@ -353,12 +353,12 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
             let parent = NSMenuItem(title: group.rawValue, action: nil, keyEquivalent: "")
             let sub = NSMenu()
             sub.autoenablesItems = false
-            commands.filter { $0.group == group }.forEach { sub.addItem(CommandMenuItem($0)) }
+            commands.filter { $0.group == group }.forEach { sub.addItem(CommandMenuItem($0, perform: perform)) }
             parent.submenu = sub
             menu.addItem(parent)
         }
         menu.addItem(.separator())
-        commands.filter { $0.group == .app && $0.id != "hide" }.forEach { menu.addItem(CommandMenuItem($0)) }
+        commands.filter { $0.group == .app && $0.id != "hide" }.forEach { menu.addItem(CommandMenuItem($0, perform: perform)) }
     }
 
     @objc private func showFromMenu() { show() }
