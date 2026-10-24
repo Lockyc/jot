@@ -12,6 +12,7 @@
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
     <key>SUFeedURL</key><string>https://github.com/lockyc/jot/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key><string>dhUi8qRRVrkRndEy1R/8WVyGz805dYJEEhwBETxj2WY=</string>
     <key>SUEnableAutomaticChecks</key><true/>
     <key>SUScheduledCheckInterval</key><integer>86400</integer>
 </dict>
