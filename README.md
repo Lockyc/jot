@@ -1,3 +1,5 @@
+<img src="Support/icon.png" alt="jot" width="128" height="128">
+
 # jot
 
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-555)

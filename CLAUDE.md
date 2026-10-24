@@ -25,6 +25,7 @@ notes. Swift package, AppKit, no third-party dependencies, macOS 14+. What's nex
   tabs; `Commands.swift` is the command registry.
 - `Tests/JotCoreTests/` — XCTest, `swift test`.
 - `Support/Info.plist` — bundle template; `just bundle` stamps `VERSION` into it.
+- `Support/icon.svg` — the app icon master; `just icons` renders `AppIcon.icns` and `icon.png` from it.
 
 ## Invariants
 

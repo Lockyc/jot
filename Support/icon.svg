@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="jot app icon">
+  <title>jot</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7c948"/>
+      <stop offset="1" stop-color="#e3961a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- macOS squircle tile -->
+  <rect x="0" y="0" width="1024" height="1024" rx="229" fill="url(#tile)"/>
+
+  <!-- the scratchpad: tabs, a few lines, the caret waiting -->
+  <rect x="226" y="176" width="572" height="672" rx="52" fill="#fffdf5"/>
+  <rect x="270" y="222" width="176" height="58" rx="20" fill="#f7c948"/>
+  <rect x="462" y="222" width="176" height="58" rx="20" fill="#f1e6c6"/>
+  <g fill="#e8dab2">
+    <rect x="270" y="346" width="452" height="30" rx="15"/>
+    <rect x="270" y="414" width="384" height="30" rx="15"/>
+    <rect x="270" y="482" width="472" height="30" rx="15"/>
+    <rect x="270" y="550" width="268" height="30" rx="15"/>
+  </g>
+  <rect x="270" y="626" width="22" height="86" rx="11" fill="#2a2522"/>
+</svg>
