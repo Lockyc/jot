@@ -52,4 +52,6 @@ notes. Swift package, AppKit, no third-party dependencies, macOS 14+. What's nex
   (`git merge --ff-only dev`). Docs-only changes may land on `main` and are forward-merged into
   `dev` immediately.
 - Version: the root `VERSION` file is the only source; a release tags `v<VERSION>` and publishes
-  a GitHub release with notes.
+  a GitHub release with notes, `jot.zip` and the Sparkle `appcast.xml` the app's `SUFeedURL`
+  reads. The release interface: `just gate`, `VERSION`, `just bundle` (signs with
+  `APPLE_SIGNING_IDENTITY`, ad-hoc without it), `info_plist`, `just sparkle-bin`.

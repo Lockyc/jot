@@ -1,9 +1,11 @@
 import AppKit
 import JotCore
+import Sparkle
 
 final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMenuDelegate {
     let store: NoteStore
     let hotKey = HotKey()
+    let updater = Updater.make()
     private(set) var panel: JotPanel!
     private(set) var editor: EditorView!
     private(set) var commands: [Command] = []

@@ -103,6 +103,10 @@ extension JotController {
             Command(id: "settings", title: "Settings…", group: .app, keys: [KeyCombo(kVK_ANSI_Comma, .command)]) { [unowned self] in
                 self.openSettings()
             },
+            Command(id: "checkForUpdates", title: "Check for Updates…", group: .app,
+                    disabledReason: { [unowned self] in self.updater == nil ? "Only the installed jot.app updates itself" : nil }) { [unowned self] in
+                self.updater?.checkForUpdates(nil)
+            },
             Command(id: "hide", title: "Hide jot", group: .app, keys: [KeyCombo(kVK_Escape)]) { [unowned self] in self.hide() },
             Command(id: "quit", title: "Quit jot", group: .app, keys: [KeyCombo(kVK_ANSI_Q, .command)]) { NSApp.terminate(nil) },
         ]
