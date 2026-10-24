@@ -67,7 +67,8 @@ extension JotController {
             Command(id: "lineBelow", title: "Insert Line Below", group: .edit, keys: [KeyCombo(kVK_Return, .command)]) { [unowned self] in self.editor.insertLineBelow() },
             Command(id: "selectLine", title: "Select Line", group: .edit, keys: [KeyCombo(kVK_ANSI_L, .command)]) { [unowned self] in self.editor.selectLines() },
             Command(id: "wrap", title: "Toggle Word Wrap", group: .edit, keys: [KeyCombo(kVK_ANSI_Z, .option)]) { [unowned self] in self.toggleWrap() },
-            Command(id: "pasteStripped", title: "Paste Without Quote Gutter", group: .edit, keys: [KeyCombo(kVK_ANSI_V, [.command, .option])]) { [unowned self] in self.editor.pasteStrippingGutter() },
+            Command(id: "pasteStripped", title: "Paste Without Quote Gutter", group: .edit, keys: [KeyCombo(kVK_ANSI_V, [.command, .option])]) { [unowned self] in self.editor.paste(transforming: TextActions.stripQuoteGutter) },
+            Command(id: "pasteUnwrapped", title: "Paste Unwrapped", group: .edit, keys: [KeyCombo(kVK_ANSI_V, [.command, .control])]) { [unowned self] in self.editor.paste(transforming: TextActions.unwrap) },
         ]
     }
 
@@ -83,6 +84,7 @@ extension JotController {
             action("sortDesc", "Sort Lines Z→A") { TextActions.sortLines($0, descending: true) },
             action("dedupe", "Remove Duplicate Lines", TextActions.removeDuplicateLines),
             action("removeBlank", "Remove Blank Lines", TextActions.removeBlankLines),
+            action("unwrap", "Unwrap Lines", TextActions.unwrap),
             action("join", "Join Lines", TextActions.joinLines),
             Command(id: "split", title: "Split on Delimiter…", group: .text) { [unowned self] in self.promptSplit() },
             action("upper", "UPPERCASE", TextActions.uppercase),

@@ -40,8 +40,9 @@ menu bar; it has no Dock icon.
 | Select line (repeat to extend) | ⌘L |
 | Toggle word wrap | ⌥Z |
 | Paste without quote gutter | ⌥⌘V |
+| Paste unwrapped | ⌃⌘V |
 | Strip quote gutter (selection, or whole note) | ⇧⌘V |
-| Dedent · trim trailing whitespace · sort A→Z / Z→A · remove duplicate / blank lines · join lines · split on delimiter · UPPER / lower / Title case · number lines | ⌘K |
+| Dedent · trim trailing whitespace · sort A→Z / Z→A · remove duplicate / blank lines · unwrap lines · join lines · split on delimiter · UPPER / lower / Title case · number lines | ⌘K |
 | Find | ⌘F |
 | Settings | ⌘, |
 
@@ -52,7 +53,9 @@ goes to the first non-blank character, then to column 0.
 Text actions work on the selection, or the whole note when nothing is selected, and each is one
 undo step. **Strip quote gutter** removes the `│` / `|` / `▎` / `>` bar that comes along when
 copying a quoted block out of Claude, then removes the shared indent; a markdown table inside a
-`│` gutter keeps its own pipes.
+`│` gutter keeps its own pipes. **Unwrap lines** rejoins the line breaks a terminal copy of a
+Claude Code reply carries at the terminal's width, keeping paragraphs, list items, tables and
+fenced code apart.
 
 ## Build & test
 

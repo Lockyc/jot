@@ -90,9 +90,10 @@ final class EditorView: NSTextView {
     func insertLineBelow() { apply(LineOps.insertLineBelow(string, selection: selectedRange())) }
     func selectLines() { setSelectedRange(LineOps.selectLine(string, selection: selectedRange())) }
 
-    func pasteStrippingGutter() {
+    /// Pastes the clipboard text through `f`, as one undo step.
+    func paste(transforming f: (String) -> String) {
         guard let raw = NSPasteboard.general.string(forType: .string) else { return }
-        let text = TextActions.stripQuoteGutter(raw)
+        let text = f(raw)
         let sel = selectedRange()
         apply(TextEdit(range: sel, replacement: text,
                        selection: NSRange(location: sel.location + (text as NSString).length, length: 0)))
