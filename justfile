@@ -62,6 +62,8 @@ run: bundle quit
 install: bundle quit
     rm -rf /Applications/jot.app
     cp -R {{app}} /Applications/jot.app
+    @# the commit this build came from: lets a later release (lockstep.sh) tell whether it is newer before replacing it
+    xattr -w com.lockyc.build-commit "$(git rev-parse HEAD)$(git status --porcelain | grep -q . && echo -dirty)" /Applications/jot.app
     @just launch /Applications/jot.app
 
 # Quits any running Jot, force-killing one still alive after 3s.
