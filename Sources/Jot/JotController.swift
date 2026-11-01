@@ -146,7 +146,8 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     }
 
     func selectTab(_ i: Int) {
-        guard i != activeTab else { return }
+        // The button is .pushOnPushOff, so a click on the active tab turned it off: put it back.
+        guard i != activeTab else { refreshChrome(); return }
         rememberSelection()
         store.setText(editor.string, tab: activeTab)
         store.updateState { $0.activeTab = i }

@@ -13,8 +13,6 @@ Accepted limitations and small fixes not yet done. Remove an item when it lands.
 - **⎿ gutter continuation lines.** Claude Code marks only the first line of tool output with
   `⎿`; stripping it leaves later lines indented by the marker's width. Next: replace the marker
   and its space with equal-width spaces before dedenting (`TextActions.stripQuoteGutter`).
-- **Active tab button toggles off when clicked.** `.pushOnPushOff` flips it and `selectTab`
-  returns early. Next: `refreshChrome()` on that path.
 - **Tab labels rebuilt per keystroke.** `textDidChange` relabels all seven tabs. Next: relabel
   only the active one; matters once notes get large.
 - **Launch at login is only in Settings.** The design put it in the status menu too. Next: a
