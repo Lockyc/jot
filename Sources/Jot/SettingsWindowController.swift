@@ -3,6 +3,19 @@ import Carbon.HIToolbox
 import JotCore
 import ServiceManagement
 
+/// Closes on ⌘W itself rather than through a main-menu Close item: a menu item would reach the
+/// panel too and give it a hide key outside the command registry.
+private final class SettingsWindow: NSWindow {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.intersection(KeyCombo.relevant) == .command,
+           event.charactersIgnoringModifiers == "w" {
+            performClose(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+}
+
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private unowned let controller: JotController
     private let hotKeyButton = NSButton(title: "", target: nil, action: nil)
@@ -18,7 +31,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     init(controller: JotController) {
         self.controller = controller
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 240),
+        let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 240),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "jot Settings"
         window.level = .floating
