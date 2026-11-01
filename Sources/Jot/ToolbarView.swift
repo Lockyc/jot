@@ -39,6 +39,7 @@ final class ToolbarView: NSStackView {
     func update(wraps: Bool) {
         for (id, b) in buttons {
             guard let command = lookup(id) else { b.isEnabled = false; continue }
+            b.setAccessibilityLabel(command.title) // VoiceOver reads the title, not the registry id
             let reason = command.disabledReason()
             b.isEnabled = reason == nil
             b.toolTip = reason ?? "\(command.title)  \(command.shortcutDisplay)"
