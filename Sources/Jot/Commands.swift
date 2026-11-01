@@ -20,6 +20,16 @@ struct Command {
     let run: () -> Void
 
     var shortcutDisplay: String { hint ?? keys.first?.display ?? "" }
+
+    /// The README's shortcut table, which `just gate` diffs against README.md: a row per command
+    /// with a shortcut, in registry order, then one ⌘K row naming the palette-only commands.
+    static func shortcutTable(_ commands: [Command]) -> String {
+        let paletteOnly = commands.filter { $0.shortcutDisplay.isEmpty }.map(\.title)
+        var rows = ["| Action | Shortcut |", "|---|---|"]
+        rows += commands.filter { !$0.shortcutDisplay.isEmpty }.map { "| \($0.title) | \($0.shortcutDisplay) |" }
+        if !paletteOnly.isEmpty { rows.append("| \(paletteOnly.joined(separator: " · ")) | ⌘K |") }
+        return rows.joined(separator: "\n")
+    }
 }
 
 extension JotController {

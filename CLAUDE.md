@@ -41,7 +41,8 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
   as a `hint`.
 - Notes are plain files the user greps and edits: `~/Documents/jot/1.txt`…`7.txt` plus
   `state.json`. No sync of any kind.
-- The README's shortcut table restates the registry; change both together.
+- The README's shortcut table is `Jot --print-shortcuts` (`Command.shortcutTable`) pasted in;
+  `just gate` fails when they differ.
 
 ## Build, test, verify, branches
 

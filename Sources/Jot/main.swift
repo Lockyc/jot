@@ -1,4 +1,13 @@
 import AppKit
+import JotCore
+
+// `Jot --print-shortcuts` prints the README's shortcut table from the registry and exits. The
+// store is a throwaway folder: building the commands never reads it.
+if CommandLine.arguments.contains("--print-shortcuts") {
+    let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("jot-print-shortcuts")
+    print(Command.shortcutTable(JotController(store: NoteStore(folder: scratch)).makeCommands()))
+    exit(0)
+}
 
 // AppKit's tooltip delay in ms (system default ~1000); the toolbar is icon-only, so its tooltips
 // should come up quickly.

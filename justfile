@@ -9,11 +9,23 @@ default:
 test:
     swift test
 
-# Pre-merge gate: lint the installer, build everything and run the tests
+# Pre-merge gate: lint the installer, build everything, run the tests, check the README's shortcut table
 gate:
     shellcheck install.sh
     swift build
     swift test
+    @just shortcuts-check
+
+# Fail when README.md's shortcut table differs from the one the command registry prints
+shortcuts-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bin=$(swift build --show-bin-path)
+    readme=$(awk '/^\| Action \| Shortcut \|$/ {t=1} t && !/^\|/ {exit} t' README.md)
+    if ! diff -u --label README.md --label 'Jot --print-shortcuts' <(printf '%s\n' "$readme") <("$bin/Jot" --print-shortcuts); then
+        echo "README.md's shortcut table is out of date: paste in the output of \`$bin/Jot --print-shortcuts\`" >&2
+        exit 1
+    fi
 
 app := "build/jot.app"
 info_plist := "Support/Info.plist"

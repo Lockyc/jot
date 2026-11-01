@@ -41,22 +41,35 @@ just install    # builds, copies to /Applications/jot.app and launches it
 
 | Action | Shortcut |
 |---|---|
-| Clear note (⌘Z restores) | ⇧⌘⌫ |
-| Copy & clear note | ⇧⌘C |
-| Pin / unpin tab | ⌘P |
-| Indent / outdent lines | ⇥ / ⇧⇥, ⌘] / ⌘[ |
-| Move line up / down | ⌥↑ / ⌥↓ |
-| Duplicate line or selection | ⌘D |
-| Delete line | ⇧⌘K |
-| Insert line below | ⌘↩ |
-| Select line (repeat to extend) | ⌘L |
-| Toggle word wrap | ⌥Z |
-| Paste without quote gutter | ⌥⌘V |
-| Paste unwrapped | ⌃⌘V |
-| Strip quote gutter (selection, or whole note) | ⇧⌘V |
-| Dedent · trim trailing whitespace · sort A→Z / Z→A · remove duplicate / blank lines · unwrap lines · join lines · split on delimiter · UPPER / lower / Title case · number lines | ⌘K |
-| Find | ⌘F |
-| Settings | ⌘, |
+| Clear Note | ⇧⌘⌫ |
+| Copy & Clear Note | ⇧⌘C |
+| Pin / Unpin Tab | ⌘P |
+| Indent Lines | ⇥ / ⌘] |
+| Outdent Lines | ⇧⇥ / ⌘[ |
+| Move Line Up | ⌥↑ |
+| Move Line Down | ⌥↓ |
+| Duplicate Line / Selection | ⌘D |
+| Delete Line | ⇧⌘K |
+| Insert Line Below | ⌘↩ |
+| Select Line | ⌘L |
+| Toggle Word Wrap | ⌥Z |
+| Paste Without Quote Gutter | ⌥⌘V |
+| Paste Unwrapped | ⌃⌘V |
+| Strip Quote Gutter | ⇧⌘V |
+| Go to Tab 1 | ⌘1 |
+| Go to Tab 2 | ⌘2 |
+| Go to Tab 3 | ⌘3 |
+| Go to Tab 4 | ⌘4 |
+| Go to Tab 5 | ⌘5 |
+| Go to Tab 6 | ⌘6 |
+| Go to Tab 7 | ⌘7 |
+| Command Palette | ⌘K |
+| Settings… | ⌘, |
+| Hide jot | ⎋ |
+| Quit jot | ⌘Q |
+| Dedent · Trim Trailing Whitespace · Sort Lines A→Z · Sort Lines Z→A · Remove Duplicate Lines · Remove Blank Lines · Unwrap Lines · Join Lines · Split on Delimiter… · UPPERCASE · lowercase · Title Case · Number Lines · Check for Updates… | ⌘K |
+
+⌘F finds, ⌘Z after Clear restores the note, and ⌘L again extends the selection a line.
 
 Typing behaves like a code editor: ↩ keeps the line's indent and continues a `- ` / `* ` bullet
 or a `1. ` / `1) ` numbered list (↩ on an empty item ends the list), ⌫ in leading spaces removes one indent, and ⌘←
@@ -73,6 +86,6 @@ fenced code apart.
 
 ```bash
 just test     # unit tests
-just gate     # lint installer, build, tests
+just gate     # lint installer, build, tests, README shortcut table
 just run      # build and launch build/jot.app
 ```
