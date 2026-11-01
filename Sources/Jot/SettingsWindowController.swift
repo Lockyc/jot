@@ -107,7 +107,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
                 NSSound.beep()
                 return nil
             }
-            let display = KeyCombo.modifierGlyphs(flags) + (event.charactersIgnoringModifiers ?? "").uppercased()
+            let display = KeyCombo.modifierGlyphs(flags) + KeyCombo.keyLabel(event)
             let spec = HotKeySpec(keyCode: UInt32(event.keyCode), modifiers: carbonModifiers(flags), display: display)
             self.controller.updateSettings { $0.hotKey = spec }
             self.stopRecording()

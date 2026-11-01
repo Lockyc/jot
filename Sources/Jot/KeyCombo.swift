@@ -33,6 +33,23 @@ struct KeyCombo: Hashable {
 
     var display: String { Self.modifierGlyphs(modifiers) + (Self.names[Int(keyCode)] ?? "?") }
 
+    /// Keys a recorded hotkey may use that have no character of their own; label-only, so
+    /// `menuEquivalent` never reads them.
+    static let keyNames: [Int: String] = [
+        kVK_Space: "Space", kVK_LeftArrow: "←", kVK_RightArrow: "→",
+        kVK_ForwardDelete: "⌦", kVK_Home: "↖", kVK_End: "↘", kVK_PageUp: "⇞", kVK_PageDown: "⇟",
+        kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4", kVK_F5: "F5", kVK_F6: "F6",
+        kVK_F7: "F7", kVK_F8: "F8", kVK_F9: "F9", kVK_F10: "F10", kVK_F11: "F11", kVK_F12: "F12",
+    ]
+
+    /// The label for a recorded key: by key code where it has no character, else the
+    /// unshifted character (⌃⇧1 is "1", not "!").
+    static func keyLabel(_ event: NSEvent) -> String {
+        let code = Int(event.keyCode)
+        if let name = keyNames[code] ?? names[code] { return name }
+        return (event.characters(byApplyingModifiers: []) ?? "").uppercased()
+    }
+
     /// NSMenuItem keyEquivalent for this combo (paired with `modifiers`).
     var menuEquivalent: String {
         switch Int(keyCode) {
