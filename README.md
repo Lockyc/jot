@@ -73,6 +73,6 @@ fenced code apart.
 
 ```bash
 just test     # unit tests
-just gate     # build + tests
+just gate     # lint installer, build, tests
 just run      # build and launch build/jot.app
 ```

@@ -14,7 +14,7 @@ links:
 # jot — agent notes
 
 Hotkey-toggled macOS scratchpad: a menu-bar app with a floating panel holding seven plain-text
-notes. Swift package, AppKit, no third-party dependencies, macOS 14+. What's next:
+notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. What's next:
 [docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
 
 ## Layout
