@@ -76,6 +76,12 @@ extension JotController {
             Command(id: "deleteLine", title: "Delete Line", group: .edit, keys: [KeyCombo(kVK_ANSI_K, [.command, .shift])]) { [unowned self] in self.editor.deleteLines() },
             Command(id: "lineBelow", title: "Insert Line Below", group: .edit, keys: [KeyCombo(kVK_Return, .command)]) { [unowned self] in self.editor.insertLineBelow() },
             Command(id: "selectLine", title: "Select Line", group: .edit, keys: [KeyCombo(kVK_ANSI_L, .command)]) { [unowned self] in self.editor.selectLines() },
+            Command(id: "splitLines", title: "Split into Lines", group: .edit, keys: [KeyCombo(kVK_ANSI_L, [.command, .shift])],
+                    disabledReason: { [unowned self] in self.editor.selections.allSatisfy { $0.length == 0 } ? "Select the lines first" : nil }) { [unowned self] in
+                self.editor.splitIntoLines()
+            },
+            Command(id: "caretAbove", title: "Add Caret Above", group: .edit, keys: [KeyCombo(kVK_UpArrow, [.control, .shift])]) { [unowned self] in self.editor.addCaret(up: true) },
+            Command(id: "caretBelow", title: "Add Caret Below", group: .edit, keys: [KeyCombo(kVK_DownArrow, [.control, .shift])]) { [unowned self] in self.editor.addCaret(up: false) },
             Command(id: "wrap", title: "Toggle Word Wrap", group: .edit, keys: [KeyCombo(kVK_ANSI_Z, .option)]) { [unowned self] in self.toggleWrap() },
             Command(id: "pasteStripped", title: "Paste Without Quote Gutter", group: .edit, keys: [KeyCombo(kVK_ANSI_V, [.command, .option])]) { [unowned self] in self.editor.paste(transforming: TextActions.stripQuoteGutter) },
             Command(id: "pasteUnwrapped", title: "Paste Unwrapped", group: .edit, keys: [KeyCombo(kVK_ANSI_V, [.command, .control])]) { [unowned self] in self.editor.paste(transforming: TextActions.unwrap) },
@@ -117,7 +123,9 @@ extension JotController {
                     disabledReason: { [unowned self] in self.updater == nil ? "Only the installed jot.app updates itself" : nil }) { [unowned self] in
                 self.updater?.checkForUpdates(nil)
             },
-            Command(id: "hide", title: "Hide jot", group: .app, keys: [KeyCombo(kVK_Escape)]) { [unowned self] in self.hide() },
+            Command(id: "hide", title: "Hide jot", group: .app, keys: [KeyCombo(kVK_Escape)]) { [unowned self] in
+                if !self.editor.collapseToPrimary() { self.hide() }
+            },
             Command(id: "quit", title: "Quit jot", group: .app, keys: [KeyCombo(kVK_ANSI_Q, .command)]) { NSApp.terminate(nil) },
         ]
     }

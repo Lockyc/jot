@@ -27,5 +27,13 @@ Accepted limitations and small fixes not yet done. Remove an item when it lands.
   the width (a URL) that the terminal split mid-word is rejoined with a space. Next: a sample of
   real Claude Code copies to tune `wrapSlack` and to detect mid-word splits (the line above
   fills the full width with no space in it).
+- **Select Next Match.** Adding a caret at the next occurrence of the selection serves renaming
+  rather than lists, and ⌘D is Duplicate. Next: pick a key (⌃⌘G for all matches is free) and add
+  `Carets.nextMatch`.
+- **Multi-caret ↑/↓ forget the goal column.** Each caret is moved from a fresh native selection,
+  so passing a shorter line loses the column. Next: keep a goal x per caret beside `EditorView.heads`
+  and restore it after each native move.
+- **Extra carets don't blink**; only the primary does. Next: a timer toggling the `draw(_:)`
+  overlay in step with `insertionPointBlinkPeriod`.
 - **CRLF in line operations.** `LineOps` splits on LF only; a CRLF note leaves a stray `\r` on
   line moves (jot itself writes LF).

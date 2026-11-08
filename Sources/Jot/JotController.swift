@@ -193,7 +193,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         }
     }
 
-    func rememberSelection() { selections[activeTab] = editor.selectedRange() }
+    func rememberSelection() { selections[activeTab] = editor.selections[0] }
 
     func discardUndo(_ tab: Int) { undoManagers[tab].removeAllActions() }
 

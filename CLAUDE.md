@@ -19,8 +19,8 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
 
 ## Layout
 
-- `Sources/JotCore/` — Foundation/CoreGraphics only: text transforms, line operations, fuzzy
-  match, the hotkey toggle rule, panel placement, persistence. **Every unit test lives here**; keep AppKit out of it.
+- `Sources/JotCore/` — Foundation/CoreGraphics only: text transforms, line operations,
+  multi-caret composition (`MultiEdit`, `Carets`), fuzzy match, the hotkey toggle rule, panel placement, persistence. **Every unit test lives here**; keep AppKit out of it.
 - `Sources/Jot/` — the AppKit executable. `JotController` owns the panel, store, hotkey and
   tabs; `Commands.swift` is the command registry.
 - `Tests/JotCoreTests/` — XCTest, `swift test`.
@@ -37,8 +37,11 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
   The key monitor, palette, toolbar buttons and status menu all read it; a new action is one
   registry entry and nothing else. Whether a key reaches the registry at all (editor focused, no
   IME composition, palette not focused) is `KeyRouting.route`. Editing keys are the exception —
-  `EditorView`'s overrides of Tab/⇧Tab, ↩, ⌫ and ⌘← — and the registry carries only Tab/⇧Tab,
-  as a `hint`.
+  `EditorView`'s overrides of Tab/⇧Tab, ↩, ⌫ and ⌘←, plus the per-caret text commands in
+  `EditorView+Carets.swift` — and the registry carries only Tab/⇧Tab, as a `hint`.
+- **Every jot edit goes through `EditorView.apply(_: MultiEdit)`**, built by
+  `MultiEdit.perSelection` over `EditorView.selections`; one caret's typing stays native.
+  Never read `layoutManager`: it silently drops the editor from TextKit 2 to TextKit 1.
 - Notes are plain files the user greps and edits: `~/Documents/jot/1.txt`…`7.txt` plus
   `state.json`. No sync of any kind.
 - The README's shortcut table is `Jot --print-shortcuts` (`Command.shortcutTable`) pasted in;

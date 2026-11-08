@@ -31,7 +31,7 @@ just install    # builds, copies to /Applications/jot.app and launches it
 
 ## Use
 
-- **⌃⇧T** shows and hides the panel (change it in Settings, ⌘,). **⎋** also hides.
+- **⌃⇧T** shows and hides the panel (change it in Settings, ⌘,). **⎋** also hides (with several carets, it first goes back to one).
 - **Seven tabs**, ⌘1–⌘7, labelled by each note's first line. Each tab is a plain file in
   `~/Documents/jot/` (`1.txt` … `7.txt`) — grep it, edit it elsewhere; jot picks up outside edits
   the next time it shows. Nothing syncs.
@@ -52,6 +52,9 @@ just install    # builds, copies to /Applications/jot.app and launches it
 | Delete Line | ⇧⌘K |
 | Insert Line Below | ⌘↩ |
 | Select Line | ⌘L |
+| Split into Lines | ⇧⌘L |
+| Add Caret Above | ⌃⇧↑ |
+| Add Caret Below | ⌃⇧↓ |
 | Toggle Word Wrap | ⌥Z |
 | Paste Without Quote Gutter | ⌥⌘V |
 | Paste Unwrapped | ⌃⌘V |
@@ -74,6 +77,11 @@ just install    # builds, copies to /Applications/jot.app and launches it
 Typing behaves like a code editor: ↩ keeps the line's indent and continues a `- ` / `* ` bullet
 or a `1. ` / `1) ` numbered list (↩ on an empty item ends the list), ⌫ in leading spaces removes one indent, and ⌘←
 goes to the first non-blank character, then to column 0.
+
+**Multiple carets** for editing lists: ⇧⌘L puts a caret at the end of every selected line,
+⌃⇧↑ / ⌃⇧↓ add one above or below, ⌘-click adds one and ⌥-drag selects a column. Typing,
+deleting, the arrow keys, ↩, paste (one clipboard line per caret when the counts match) and the
+line operations act at every caret; ⎋ goes back to one.
 
 Text actions work on the selection, or the whole note when nothing is selected, and each is one
 undo step. **Strip quote gutter** removes the `│` / `|` / `▎` / `>` bar that comes along when
