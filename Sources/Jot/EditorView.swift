@@ -1,8 +1,20 @@
 import AppKit
 import JotCore
 
+/// The note editor. With one caret, typing, deleting and moving stay native (IME, typing-undo
+/// coalescing, autocorrect); with several, `EditorView+Carets.swift` splices every caret explicitly
+/// through `apply(_: MultiEdit)`.
 final class EditorView: NSTextView {
     var indentWidth = 2
+    /// The caret list while there are two or more, in document order; empty otherwise, when the
+    /// native selection is the only one. AppKit holds only the non-empty ones (or the primary);
+    /// the other empty carets are drawn by `draw(_:)`.
+    var carets: [NSRange] = []
+    /// The moving end of each caret, for ⇧-extended moves.
+    var heads: [Int] = []
+    /// Set while jot itself changes the native selection, so `setSelectedRanges` doesn't treat
+    /// the change as the user leaving multi-caret mode.
+    var settingCarets = false
     var indentUnit: String { String(repeating: " ", count: indentWidth) }
 
     func configurePlain() {
@@ -56,7 +68,8 @@ final class EditorView: NSTextView {
 
     /// Every selection, in document order: the caret list when there are several, else the
     /// native selection.
-    var selections: [NSRange] { [selectedRange()] }
+    var selections: [NSRange] { carets.count > 1 ? carets : [selectedRange()] }
+    var hasMultipleCarets: Bool { carets.count > 1 }
 
     /// Applies every splice as one change and one undo step, then selects `m.selections`.
     func apply(_ m: MultiEdit) {
@@ -70,7 +83,7 @@ final class EditorView: NSTextView {
         }
         storage.endEditing()
         didChangeText()
-        setSelectedRange(m.selections[0])
+        setCarets(m.selections)
         scrollRangeToVisible(m.selections[0])
     }
 
@@ -110,7 +123,7 @@ final class EditorView: NSTextView {
     }
     func deleteLines() { edit(LineOps.deleteLines) }
     func insertLineBelow() { edit(LineOps.insertLineBelow) }
-    func selectLines() { setSelectedRange(LineOps.selectLine(string, selection: selectedRange())) }
+    func selectLines() { let text = string; setCarets(selections.map { LineOps.selectLine(text, selection: $0) }) }
 
     /// Pastes the clipboard text through `f`, as one undo step.
     func paste(transforming f: (String) -> String) {
@@ -126,13 +139,19 @@ final class EditorView: NSTextView {
 
     /// Tab: indent unit at the caret, or indent every touched line when there is a selection.
     override func insertTab(_ sender: Any?) {
-        if selectedRange().length == 0 { insertText(indentUnit, replacementRange: selectedRange()) } else { indentLines() }
+        guard selections.allSatisfy({ $0.length == 0 }) else { indentLines(); return }
+        if hasMultipleCarets {
+            edit { [indentUnit] in Carets.replace($1, with: indentUnit) }
+        } else {
+            insertText(indentUnit, replacementRange: selectedRange())
+        }
     }
     override func insertBacktab(_ sender: Any?) { outdentLines() }
 
     override func insertNewline(_ sender: Any?) { edit(LineOps.newline) }
 
     override func deleteBackward(_ sender: Any?) {
+        if hasMultipleCarets { edit { [indentWidth] in Carets.deleteBackward($0, $1, indentWidth: indentWidth) }; return }
         let sel = selectedRange()
         if let e = LineOps.deleteBackward(string, selection: sel, width: indentWidth) {
             edit { _, _ in e }
@@ -141,9 +160,16 @@ final class EditorView: NSTextView {
         }
     }
 
-    override func moveToLeftEndOfLine(_ sender: Any?) { smartLineStart(extend: false) { super.moveToLeftEndOfLine(sender) } }
+    override func moveToLeftEndOfLine(_ sender: Any?) {
+        let move = { self.smartLineStart(extend: false) { super.moveToLeftEndOfLine(sender) } }
+        if hasMultipleCarets { moveEach(extend: false, move) } else { move() }
+    }
     override func moveToLeftEndOfLineAndModifySelection(_ sender: Any?) {
-        smartLineStart(extend: true) { super.moveToLeftEndOfLineAndModifySelection(sender) }
+        if hasMultipleCarets {
+            moveEach(extend: true) { self.smartLineStart(extend: false) { super.moveToLeftEndOfLine(sender) } }
+        } else {
+            smartLineStart(extend: true) { super.moveToLeftEndOfLineAndModifySelection(sender) }
+        }
     }
 
     /// Lets AppKit move to the visual line start first; only when that is the start of the
