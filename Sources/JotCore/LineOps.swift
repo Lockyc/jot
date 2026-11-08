@@ -54,31 +54,59 @@ struct LineTable {
 public enum LineOps {
     static func length(_ s: String) -> Int { (s as NSString).length }
 
-    public static func indent(_ text: String, selection sel: NSRange, unit: String) -> TextEdit {
-        let t = LineTable(text), r = t.lines(covering: sel)
-        let lines = r.map(t.content)
-        let replacement = lines.map { $0.isEmpty ? $0 : unit + $0 }.joined(separator: "\n")
-        let span = t.span(r.lowerBound, r.upperBound)
-        let selection = sel.length == 0
-            ? NSRange(location: sel.location + (lines[0].isEmpty ? 0 : length(unit)), length: 0)
-            : NSRange(location: span.location, length: length(replacement))
-        return TextEdit(range: span, replacement: replacement, selection: selection)
+    /// Blocks of contiguous lines the selections touch; lines next to each other join one block.
+    static func blocks(_ t: LineTable, _ sels: [NSRange]) -> [ClosedRange<Int>] {
+        var blocks: [ClosedRange<Int>] = []
+        for r in sels.map(t.lines(covering:)).sorted(by: { $0.lowerBound < $1.lowerBound }) {
+            if let last = blocks.last, r.lowerBound <= last.upperBound + 1 {
+                blocks[blocks.count - 1] = last.lowerBound...max(last.upperBound, r.upperBound)
+            } else {
+                blocks.append(r)
+            }
+        }
+        return blocks
     }
 
-    public static func outdent(_ text: String, selection sel: NSRange, width: Int) -> TextEdit {
-        let t = LineTable(text), r = t.lines(covering: sel)
-        let results = r.map { i -> (String, Int) in
-            let line = t.content(i)
-            if line.hasPrefix("\t") { return (String(line.dropFirst()), 1) }
-            let n = min(width, line.prefix(while: { $0 == " " }).count)
-            return (String(line.dropFirst(n)), n)
+    /// A per-line edit at the start of every line the selections touch: `cut(line)` is how many
+    /// leading characters to remove, `insert(line)` what to put there. Carets move with their
+    /// line's edit; a non-empty selection becomes its whole lines.
+    static func lineStarts(_ text: String, _ selections: [NSRange], cut: (String) -> Int, insert: (String) -> String) -> MultiEdit? {
+        let t = LineTable(text), sels = MultiEdit.normalize(selections)
+        let lines = Set(sels.flatMap { Array(t.lines(covering: $0)) }).sorted()
+        let edits = lines.compactMap { i -> (line: Int, splice: Splice)? in
+            let content = t.content(i), n = cut(content), s = insert(content)
+            return n == 0 && s.isEmpty ? nil : (i, Splice(range: NSRange(location: t.starts[i], length: n), replacement: s))
         }
-        let replacement = results.map(\.0).joined(separator: "\n")
-        let span = t.span(r.lowerBound, r.upperBound)
-        let selection = sel.length == 0
-            ? NSRange(location: max(t.starts[r.lowerBound], sel.location - results[0].1), length: 0)
-            : NSRange(location: span.location, length: length(replacement))
-        return TextEdit(range: span, replacement: replacement, selection: selection)
+        guard !edits.isEmpty else { return nil }
+        func delta(_ e: (line: Int, splice: Splice)) -> Int { length(e.splice.replacement) - e.splice.range.length }
+        /// Where `location` on `line` lands: after every edit on earlier lines and, for its own line,
+        /// after the insert, clamped to the line start when it sat in the removed characters.
+        func map(_ location: Int, line: Int) -> Int {
+            let before = edits.filter { $0.line < line }.reduce(0) { $0 + delta($1) }
+            guard let own = edits.first(where: { $0.line == line })?.splice else { return location + before }
+            let start = t.starts[line] + before
+            return start + length(own.replacement) + max(0, location - t.starts[line] - own.range.length)
+        }
+        let mapped = sels.map { s -> NSRange in
+            guard s.length > 0 else { return NSRange(location: map(s.location, line: t.line(at: s.location)), length: 0) }
+            let r = t.lines(covering: s)
+            let start = t.starts[r.lowerBound] + edits.filter { $0.line < r.lowerBound }.reduce(0) { $0 + delta($1) }
+            let end = t.end(r.upperBound) + edits.filter { $0.line <= r.upperBound }.reduce(0) { $0 + delta($1) }
+            return NSRange(location: start, length: end - start)
+        }
+        return MultiEdit(splices: edits.map(\.splice), selections: mapped)
+    }
+
+    /// ⇥ on a selection / ⌘]: the indent unit before every non-empty line the selections touch.
+    public static func indent(_ text: String, selections: [NSRange], unit: String) -> MultiEdit? {
+        lineStarts(text, selections, cut: { _ in 0 }, insert: { $0.isEmpty ? "" : unit })
+    }
+
+    /// ⇧⇥ / ⌘[: one leading tab, or up to `width` leading spaces, off every line the selections touch.
+    public static func outdent(_ text: String, selections: [NSRange], width: Int) -> MultiEdit? {
+        lineStarts(text, selections, cut: { line in
+            line.hasPrefix("\t") ? 1 : min(width, line.prefix(while: { $0 == " " }).count)
+        }, insert: { _ in "" })
     }
 
     /// ⌥↑/⌥↓: every block of contiguous lines the selections touch swaps with the line beyond it,
@@ -86,14 +114,7 @@ public enum LineOps {
     public static func move(_ text: String, selections: [NSRange], up: Bool) -> MultiEdit? {
         let t = LineTable(text), sels = MultiEdit.normalize(selections)
         guard !sels.isEmpty else { return nil }
-        var blocks: [ClosedRange<Int>] = []
-        for r in sels.map(t.lines(covering:)) {
-            if let last = blocks.last, r.lowerBound <= last.upperBound + 1 {
-                blocks[blocks.count - 1] = last.lowerBound...max(last.upperBound, r.upperBound)
-            } else {
-                blocks.append(r)
-            }
-        }
+        let blocks = blocks(t, sels)
         guard up ? blocks[0].lowerBound > 0 : blocks[blocks.count - 1].upperBound < t.count - 1 else { return nil }
         let splices = blocks.map { b -> Splice in
             let lines = b.map(t.content)
@@ -120,6 +141,32 @@ public enum LineOps {
         let block = t.ns.substring(with: span)
         return TextEdit(range: NSRange(location: NSMaxRange(span), length: 0), replacement: "\n" + block,
                         selection: NSRange(location: sel.location + length(block) + 1, length: 0))
+    }
+
+    /// ⌘D: with only carets, each line holding one is duplicated once and its carets move onto the
+    /// copy; otherwise each non-empty selection duplicates itself and carets stay put.
+    public static func duplicate(_ text: String, selections: [NSRange]) -> MultiEdit? {
+        let sels = MultiEdit.normalize(selections)
+        guard sels.allSatisfy({ $0.length == 0 }) else {
+            return MultiEdit.perSelection(text, sels) { $0.length > 0 ? duplicate(text, selection: $0) : nil }
+        }
+        let t = LineTable(text)
+        let lines = Set(sels.map { t.line(at: $0.location) }).sorted()
+        func grown(_ line: Int) -> Int { length(t.content(line)) + 1 }
+        let carets = sels.map { s -> NSRange in
+            let line = t.line(at: s.location)
+            let before = lines.filter { $0 < line }.reduce(0) { $0 + grown($1) }
+            return NSRange(location: s.location + before + grown(line), length: 0)
+        }
+        return MultiEdit(splices: lines.map { Splice(range: NSRange(location: t.end($0), length: 0), replacement: "\n" + t.content($0)) },
+                         selections: carets)
+    }
+
+    /// ⇧⌘K: every block of contiguous touched lines is removed, one caret left per block.
+    public static func deleteLines(_ text: String, selections: [NSRange]) -> MultiEdit? {
+        let t = LineTable(text)
+        let spans = blocks(t, MultiEdit.normalize(selections)).map { t.span($0.lowerBound, $0.upperBound) }
+        return MultiEdit.perSelection(text, spans) { deleteLines(text, selection: $0) }
     }
 
     /// The list marker opening `s` (`- `, `* `, `3. `, `3) `) and the one the next item takes.

@@ -41,7 +41,8 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
   `EditorView+Carets.swift` — and the registry carries only Tab/⇧Tab, as a `hint`.
 - **Every jot edit goes through `EditorView.apply(_: MultiEdit)`**, built by
   `MultiEdit.perSelection` over `EditorView.selections`; one caret's typing stays native.
-  Never read `layoutManager`: it silently drops the editor from TextKit 2 to TextKit 1.
+  Never read `layoutManager` or override `draw(_:)`: either silently drops the editor from
+  TextKit 2 to TextKit 1 (`configurePlain` asserts it in debug builds).
 - Notes are plain files the user greps and edits: `~/Documents/jot/1.txt`…`7.txt` plus
   `state.json`. No sync of any kind.
 - The README's shortcut table is `Jot --print-shortcuts` (`Command.shortcutTable`) pasted in;

@@ -36,6 +36,7 @@ final class EditorView: NSTextView {
         isVerticallyResizable = true
         autoresizingMask = [.width]
         maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        assert(textLayoutManager != nil, "EditorView fell back to TextKit 1: an override or a layoutManager read downgraded it")
     }
 
     func applyFont(family: String?, size: Double) {
@@ -72,11 +73,13 @@ final class EditorView: NSTextView {
     var hasMultipleCarets: Bool { carets.count > 1 }
 
     /// Applies every splice as one change and one undo step, then selects `m.selections`.
-    func apply(_ m: MultiEdit) {
+    /// nil (an op with nothing to change) does nothing.
+    func apply(_ m: MultiEdit?) {
+        guard let m else { return }
+        breakUndoCoalescing()
         guard let storage = textStorage,
               shouldChangeText(inRanges: m.splices.map { NSValue(range: $0.range) }, replacementStrings: m.splices.map(\.replacement))
         else { return }
-        breakUndoCoalescing()
         storage.beginEditing()
         for s in m.splices.reversed() {
             storage.replaceCharacters(in: s.range, with: NSAttributedString(string: s.replacement, attributes: typingAttributes))
@@ -88,9 +91,9 @@ final class EditorView: NSTextView {
     }
 
     /// Runs `op` at every selection and applies the result; nothing happens when no op edits.
-    func edit(_ op: (_ text: String, _ sel: NSRange) -> TextEdit?) {
+    func edit(onOverlap: MultiEdit.Overlap = .rerun, _ op: (_ text: String, _ sel: NSRange) -> TextEdit?) {
         let text = string
-        if let m = MultiEdit.perSelection(text, selections, { op(text, $0) }) { apply(m) }
+        if let m = MultiEdit.perSelection(text, selections, onOverlap: onOverlap, { op(text, $0) }) { apply(m) }
     }
 
     var fullRange: NSRange { NSRange(location: 0, length: (string as NSString).length) }
@@ -113,15 +116,11 @@ final class EditorView: NSTextView {
         }
     }
 
-    func indentLines() { edit { [indentUnit] in LineOps.indent($0, selection: $1, unit: indentUnit) } }
-    func outdentLines() { edit { [indentWidth] in LineOps.outdent($0, selection: $1, width: indentWidth) } }
-    func moveLines(up: Bool) { if let m = LineOps.move(string, selections: selections, up: up) { apply(m) } }
-    /// Carets alone duplicate their lines; otherwise each non-empty selection duplicates itself.
-    func duplicateLines() {
-        let allEmpty = selections.allSatisfy { $0.length == 0 }
-        edit { allEmpty || $1.length > 0 ? LineOps.duplicate($0, selection: $1) : nil }
-    }
-    func deleteLines() { edit(LineOps.deleteLines) }
+    func indentLines() { apply(LineOps.indent(string, selections: selections, unit: indentUnit)) }
+    func outdentLines() { apply(LineOps.outdent(string, selections: selections, width: indentWidth)) }
+    func moveLines(up: Bool) { apply(LineOps.move(string, selections: selections, up: up)) }
+    func duplicateLines() { apply(LineOps.duplicate(string, selections: selections)) }
+    func deleteLines() { apply(LineOps.deleteLines(string, selections: selections)) }
     func insertLineBelow() { edit(LineOps.insertLineBelow) }
     func selectLines() { let text = string; setCarets(selections.map { LineOps.selectLine(text, selection: $0) }) }
 
@@ -151,7 +150,10 @@ final class EditorView: NSTextView {
     override func insertNewline(_ sender: Any?) { edit(LineOps.newline) }
 
     override func deleteBackward(_ sender: Any?) {
-        if hasMultipleCarets { edit { [indentWidth] in Carets.deleteBackward($0, $1, indentWidth: indentWidth) }; return }
+        if hasMultipleCarets {
+            edit(onOverlap: .union) { [indentWidth] in Carets.deleteBackward($0, $1, indentWidth: indentWidth) }
+            return
+        }
         let sel = selectedRange()
         if let e = LineOps.deleteBackward(string, selection: sel, width: indentWidth) {
             edit { _, _ in e }

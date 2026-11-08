@@ -39,16 +39,18 @@ final class MultiEditTests: XCTestCase {
         XCTAssertEqual(m?.selections, [r(0, 0)])
         XCTAssertEqual(m?.splices.count, 1)
     }
-    func testIndentCaretsOnSeparateLines() {
-        let t = "a\nb\nc"
-        let o = outcome(t, MultiEdit.perSelection(t, [r(1, 0), r(3, 0), r(5, 0)]) { LineOps.indent(t, selection: $0, unit: "  ") })
-        XCTAssertEqual(o?.0, "  a\n  b\n  c")
-        XCTAssertEqual(o?.1, [r(3, 0), r(7, 0), r(11, 0)])
+    func testInsertAtCaretAndSelectionSharingStart() {
+        let o = outcome("abcdefg", MultiEdit.perSelection("abcdefg", [r(2, 0), r(2, 3)], insert("X")))
+        XCTAssertEqual(o?.0, "abXXfg")
+        XCTAssertEqual(o?.1, [r(3, 0), r(4, 0)])
     }
-    func testTwoCaretsOnOneLineIndentOnce() {
-        let o = outcome("abc", MultiEdit.perSelection("abc", [r(1, 0), r(2, 0)]) { LineOps.indent("abc", selection: $0, unit: "  ") })
-        XCTAssertEqual(o?.0, "  abc")
-        XCTAssertEqual(o?.1.count, 1)
+    func testUnionMergesOverlappingDeletions() {
+        // ⌥⌫ at carets 5 and 7 of "foo bar": both delete back to the word start at 4.
+        let o = outcome("foo bar", MultiEdit.perSelection("foo bar", [r(5, 0), r(7, 0)], onOverlap: .union) { s in
+            Carets.replace(NSRange(location: 4, length: s.location - 4), with: "")
+        })
+        XCTAssertEqual(o?.0, "foo ")
+        XCTAssertEqual(o?.1, [r(4, 0)])
     }
     func testDeleteLinesAdjacentCaretsCollapse() {
         let t = "a\nb\nc"

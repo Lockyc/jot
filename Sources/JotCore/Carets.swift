@@ -37,15 +37,18 @@ public enum Carets {
         })
     }
 
-    /// ⌃⇧↑/⌃⇧↓: a caret on the line beyond the topmost (bottommost) selection, at its column
-    /// clamped to that line's length. Unchanged at the first (last) line.
+    /// ⌃⇧↑/⌃⇧↓: a caret on the line beyond the topmost selection's first line (the bottommost's
+    /// last line), at that end's column clamped to the line's length and snapped back to a
+    /// character boundary. Unchanged at the first (last) line.
     public static func addVertical(_ text: String, _ sels: [NSRange], up: Bool) -> [NSRange] {
         let t = LineTable(text), sorted = MultiEdit.normalize(sels)
         guard let edge = up ? sorted.first : sorted.last else { return sels }
-        let line = t.line(at: edge.location), target = up ? line - 1 : line + 1
+        let line = up ? t.line(at: edge.location) : t.lines(covering: edge).upperBound
+        let target = up ? line - 1 : line + 1
         guard target >= 0, target < t.count else { return sorted }
-        let column = edge.location - t.starts[line]
-        let location = min(t.starts[target] + column, t.end(target))
+        let column = min(up ? edge.location : NSMaxRange(edge), t.end(line)) - t.starts[line]
+        var location = min(t.starts[target] + column, t.end(target))
+        if location < t.end(target) { location = t.ns.rangeOfComposedCharacterSequence(at: location).location }
         return MultiEdit.normalize(sorted + [NSRange(location: location, length: 0)])
     }
 

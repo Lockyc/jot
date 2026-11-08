@@ -12,7 +12,6 @@ extension EditorView {
     /// Selects one range per (anchor, head) pair, keeping each head for later ⇧-extended moves.
     func setCarets(pairs: [(anchor: Int, head: Int)]) {
         let byRange = pairs.map { (range: NSRange(location: min($0.anchor, $0.head), length: abs($0.head - $0.anchor)), head: $0.head) }
-            .sorted { ($0.range.location, $0.range.length) < ($1.range.location, $1.range.length) }
         let ranges = MultiEdit.normalize(byRange.map(\.range))
         settingCarets = true
         defer { settingCarets = false }
@@ -22,12 +21,13 @@ extension EditorView {
             setSelectedRange(ranges.first ?? NSRange(location: 0, length: 0))
         } else {
             carets = ranges
-            heads = ranges.count == byRange.count ? byRange.map(\.head) : ranges.map(NSMaxRange)
+            // A range that merged with another has no single head; it extends from its end.
+            heads = ranges.map { r in byRange.first { $0.range == r }?.head ?? NSMaxRange(r) }
             let shown = ranges.filter { $0.length > 0 }
             setSelectedRanges((shown.isEmpty ? [ranges[0]] : shown).map { NSValue(range: $0) },
                               affinity: .downstream, stillSelecting: false)
         }
-        needsDisplay = true
+        setNeedsDisplay(visibleRect)
     }
 
     /// ⎋ with several carets: keep only the first. false when there was only one.
@@ -58,11 +58,13 @@ extension EditorView {
         carets = ranges.count > 1 ? MultiEdit.normalize(ranges.map(\.rangeValue)) : []
         if carets.count < 2 { carets = [] }
         heads = carets.map(NSMaxRange)
-        if wasMulti || hasMultipleCarets { needsDisplay = true }
+        if wasMulti || hasMultipleCarets { setNeedsDisplay(visibleRect) }
     }
 
     /// Commands with a per-caret form below; any other text command first collapses to one caret.
+    /// `noop:` is an unbound key, which changes nothing.
     static let perCaretCommands: Set<Selector> = [
+        Selector(("noop:")),
         #selector(insertTab(_:)), #selector(insertBacktab(_:)), #selector(insertNewline(_:)),
         #selector(deleteBackward(_:)), #selector(deleteForward(_:)),
         #selector(deleteWordBackward(_:)), #selector(deleteWordForward(_:)),
@@ -83,8 +85,10 @@ extension EditorView {
 
     // MARK: Drawing
 
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
+    /// The extra carets go in `drawBackground(in:)`: overriding `draw(_:)` drops an NSTextView to
+    /// TextKit 1.
+    override func drawBackground(in dirtyRect: NSRect) {
+        super.drawBackground(in: dirtyRect)
         guard hasMultipleCarets, let window else { return }
         let native = selectedRanges.map(\.rangeValue)
         insertionPointColor.setFill()
@@ -165,7 +169,7 @@ extension EditorView {
     }
 
     override func deleteForward(_ sender: Any?) {
-        hasMultipleCarets ? edit { Carets.deleteForward($0, $1) } : super.deleteForward(sender)
+        hasMultipleCarets ? edit(onOverlap: .union) { Carets.deleteForward($0, $1) } : super.deleteForward(sender)
     }
 
     /// Deletes from each empty caret to where `move` takes it (non-empty selections delete
@@ -180,7 +184,7 @@ extension EditorView {
         }
         settingCarets = false
         let before = carets
-        edit { _, sel in
+        edit(onOverlap: .union) { _, sel in
             if sel.length > 0 { return Carets.replace(sel, with: "") }
             guard let t = targets[sel.location], t != sel.location else { return nil }
             return Carets.replace(NSRange(location: min(t, sel.location), length: abs(t - sel.location)), with: "")
@@ -224,7 +228,7 @@ extension EditorView {
         guard hasMultipleCarets, let text = Carets.copyText(string, carets) else { super.cut(sender); return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
-        edit { $1.length > 0 ? Carets.replace($1, with: "") : nil }
+        edit(onOverlap: .union) { $1.length > 0 ? Carets.replace($1, with: "") : nil }
     }
 
     override func paste(_ sender: Any?) {

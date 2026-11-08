@@ -25,6 +25,12 @@ final class CaretsTests: XCTestCase {
     func testAddCaretBelowExtendsFromBottommost() {
         XCTAssertEqual(Carets.addVertical("a\nb\nc", [r(0, 0), r(2, 0)], up: false), [r(0, 0), r(2, 0), r(4, 0)])
     }
+    func testAddCaretBelowSnapsOutOfSurrogatePair() {
+        XCTAssertEqual(Carets.addVertical("ab\n👍x", [r(1, 0)], up: false), [r(1, 0), r(3, 0)])
+    }
+    func testAddCaretBelowFromMultiLineSelection() {
+        XCTAssertEqual(Carets.addVertical("ab\ncd\nef", [r(0, 4)], up: false), [r(0, 4), r(7, 0)])
+    }
     func testAddCaretAbove() {
         XCTAssertEqual(Carets.addVertical("abc\ndef", [r(6, 0)], up: true), [r(2, 0), r(6, 0)])
     }
