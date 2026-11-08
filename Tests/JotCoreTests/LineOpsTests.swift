@@ -32,22 +32,22 @@ final class LineOpsTests: XCTestCase {
         XCTAssertEqual(LineOps.outdent("  a", selection: r(1, 0), width: 2).selection, r(0, 0))
     }
     func testMoveUp() {
-        XCTAssertEqual(LineOps.moveUp(text, selection: r(5, 0)),
-                       TextEdit(range: r(0, 7), replacement: "two\none", selection: r(1, 0)))
+        XCTAssertEqual(LineOps.move(text, selections: [r(5, 0)], up: true),
+                       MultiEdit(splices: [Splice(range: r(0, 7), replacement: "two\none")], selections: [r(1, 0)]))
     }
     func testMoveUpFirstLineIsNil() {
-        XCTAssertNil(LineOps.moveUp(text, selection: r(1, 0)))
+        XCTAssertNil(LineOps.move(text, selections: [r(1, 0)], up: true))
     }
     func testMoveDown() {
-        XCTAssertEqual(LineOps.moveDown(text, selection: r(5, 0)),
-                       TextEdit(range: r(4, 9), replacement: "three\ntwo", selection: r(11, 0)))
+        XCTAssertEqual(LineOps.move(text, selections: [r(5, 0)], up: false),
+                       MultiEdit(splices: [Splice(range: r(4, 9), replacement: "three\ntwo")], selections: [r(11, 0)]))
     }
     func testMoveDownLastLineIsNil() {
-        XCTAssertNil(LineOps.moveDown(text, selection: r(9, 0)))
+        XCTAssertNil(LineOps.move(text, selections: [r(9, 0)], up: false))
     }
     func testMoveDownWithEmojiUsesUTF16() {
-        XCTAssertEqual(LineOps.moveDown("😀a\nb", selection: r(0, 0)),
-                       TextEdit(range: r(0, 5), replacement: "b\n😀a", selection: r(2, 0)))
+        XCTAssertEqual(LineOps.move("😀a\nb", selections: [r(0, 0)], up: false),
+                       MultiEdit(splices: [Splice(range: r(0, 5), replacement: "b\n😀a")], selections: [r(2, 0)]))
     }
     func testDuplicateCaretLine() {
         XCTAssertEqual(LineOps.duplicate(text, selection: r(5, 0)),

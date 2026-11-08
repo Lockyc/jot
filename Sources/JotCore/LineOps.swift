@@ -81,22 +81,32 @@ public enum LineOps {
         return TextEdit(range: span, replacement: replacement, selection: selection)
     }
 
-    public static func moveUp(_ text: String, selection sel: NSRange) -> TextEdit? {
-        let t = LineTable(text), r = t.lines(covering: sel)
-        guard r.lowerBound > 0 else { return nil }
-        let above = t.content(r.lowerBound - 1)
-        let replacement = (r.map(t.content) + [above]).joined(separator: "\n")
-        return TextEdit(range: t.span(r.lowerBound - 1, r.upperBound), replacement: replacement,
-                        selection: NSRange(location: sel.location - length(above) - 1, length: sel.length))
-    }
-
-    public static func moveDown(_ text: String, selection sel: NSRange) -> TextEdit? {
-        let t = LineTable(text), r = t.lines(covering: sel)
-        guard r.upperBound < t.count - 1 else { return nil }
-        let below = t.content(r.upperBound + 1)
-        let replacement = ([below] + r.map(t.content)).joined(separator: "\n")
-        return TextEdit(range: t.span(r.lowerBound, r.upperBound + 1), replacement: replacement,
-                        selection: NSRange(location: sel.location + length(below) + 1, length: sel.length))
+    /// ⌥↑/⌥↓: every block of contiguous lines the selections touch swaps with the line beyond it,
+    /// carrying its selections. nil when any block is already at the edge.
+    public static func move(_ text: String, selections: [NSRange], up: Bool) -> MultiEdit? {
+        let t = LineTable(text), sels = MultiEdit.normalize(selections)
+        guard !sels.isEmpty else { return nil }
+        var blocks: [ClosedRange<Int>] = []
+        for r in sels.map(t.lines(covering:)) {
+            if let last = blocks.last, r.lowerBound <= last.upperBound + 1 {
+                blocks[blocks.count - 1] = last.lowerBound...max(last.upperBound, r.upperBound)
+            } else {
+                blocks.append(r)
+            }
+        }
+        guard up ? blocks[0].lowerBound > 0 : blocks[blocks.count - 1].upperBound < t.count - 1 else { return nil }
+        let splices = blocks.map { b -> Splice in
+            let lines = b.map(t.content)
+            return up
+                ? Splice(range: t.span(b.lowerBound - 1, b.upperBound), replacement: (lines + [t.content(b.lowerBound - 1)]).joined(separator: "\n"))
+                : Splice(range: t.span(b.lowerBound, b.upperBound + 1), replacement: ([t.content(b.upperBound + 1)] + lines).joined(separator: "\n"))
+        }
+        let moved = sels.map { s -> NSRange in
+            let b = blocks.first { $0.contains(t.line(at: s.location)) }!
+            let shift = up ? -(length(t.content(b.lowerBound - 1)) + 1) : length(t.content(b.upperBound + 1)) + 1
+            return NSRange(location: s.location + shift, length: s.length)
+        }
+        return MultiEdit(splices: splices, selections: moved)
     }
 
     public static func duplicate(_ text: String, selection sel: NSRange) -> TextEdit {

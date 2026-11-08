@@ -82,8 +82,8 @@ final class EditorView: NSTextView {
     func indentLines() { apply(LineOps.indent(string, selection: selectedRange(), unit: indentUnit)) }
     func outdentLines() { apply(LineOps.outdent(string, selection: selectedRange(), width: indentWidth)) }
     func moveLines(up: Bool) {
-        let edit = up ? LineOps.moveUp(string, selection: selectedRange()) : LineOps.moveDown(string, selection: selectedRange())
-        if let edit { apply(edit) }
+        guard let m = LineOps.move(string, selections: [selectedRange()], up: up), let s = m.splices.first else { return }
+        apply(TextEdit(range: s.range, replacement: s.replacement, selection: m.selections[0]))
     }
     func duplicateLines() { apply(LineOps.duplicate(string, selection: selectedRange())) }
     func deleteLines() { apply(LineOps.deleteLines(string, selection: selectedRange())) }
