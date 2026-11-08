@@ -54,54 +54,74 @@ final class EditorView: NSTextView {
         }
     }
 
-    /// Applies one edit as a single undo step.
-    func apply(_ e: TextEdit) {
-        guard let storage = textStorage, shouldChangeText(in: e.range, replacementString: e.replacement) else { return }
-        storage.replaceCharacters(in: e.range, with: NSAttributedString(string: e.replacement, attributes: typingAttributes))
+    /// Every selection, in document order: the caret list when there are several, else the
+    /// native selection.
+    var selections: [NSRange] { [selectedRange()] }
+
+    /// Applies every splice as one change and one undo step, then selects `m.selections`.
+    func apply(_ m: MultiEdit) {
+        guard let storage = textStorage,
+              shouldChangeText(inRanges: m.splices.map { NSValue(range: $0.range) }, replacementStrings: m.splices.map(\.replacement))
+        else { return }
+        breakUndoCoalescing()
+        storage.beginEditing()
+        for s in m.splices.reversed() {
+            storage.replaceCharacters(in: s.range, with: NSAttributedString(string: s.replacement, attributes: typingAttributes))
+        }
+        storage.endEditing()
         didChangeText()
-        setSelectedRange(e.selection)
-        scrollRangeToVisible(e.selection)
+        setSelectedRange(m.selections[0])
+        scrollRangeToVisible(m.selections[0])
+    }
+
+    /// Runs `op` at every selection and applies the result; nothing happens when no op edits.
+    func edit(_ op: (_ text: String, _ sel: NSRange) -> TextEdit?) {
+        let text = string
+        if let m = MultiEdit.perSelection(text, selections, { op(text, $0) }) { apply(m) }
     }
 
     var fullRange: NSRange { NSRange(location: 0, length: (string as NSString).length) }
 
-    /// Runs `f` on the selection, or the whole note when nothing is selected.
-    func transform(_ f: (String) -> String) {
-        let sel = selectedRange()
-        let whole = sel.length == 0
-        let range = whole ? fullRange : sel
-        let old = (string as NSString).substring(with: range)
-        let new = f(old)
-        guard new != old else { return }
-        let newLength = (new as NSString).length
-        apply(TextEdit(range: range, replacement: new,
-                       selection: whole ? NSRange(location: min(sel.location, newLength), length: 0)
-                                        : NSRange(location: range.location, length: newLength)))
+    /// Runs `f` on each non-empty selection, or the whole note when nothing is selected.
+    func transform(_ f: @escaping (String) -> String) {
+        let ns = string as NSString
+        if selections.allSatisfy({ $0.length == 0 }) {
+            let caret = selections[0].location
+            let new = f(string)
+            guard new != string else { return }
+            apply(MultiEdit(splices: [Splice(range: fullRange, replacement: new)],
+                            selections: [NSRange(location: min(caret, (new as NSString).length), length: 0)]))
+            return
+        }
+        edit { _, sel in
+            guard sel.length > 0 else { return nil }
+            let old = ns.substring(with: sel), new = f(old)
+            return new == old ? nil : TextEdit(range: sel, replacement: new, selection: NSRange(location: sel.location, length: (new as NSString).length))
+        }
     }
 
-    func indentLines() { apply(LineOps.indent(string, selection: selectedRange(), unit: indentUnit)) }
-    func outdentLines() { apply(LineOps.outdent(string, selection: selectedRange(), width: indentWidth)) }
-    func moveLines(up: Bool) {
-        guard let m = LineOps.move(string, selections: [selectedRange()], up: up), let s = m.splices.first else { return }
-        apply(TextEdit(range: s.range, replacement: s.replacement, selection: m.selections[0]))
+    func indentLines() { edit { [indentUnit] in LineOps.indent($0, selection: $1, unit: indentUnit) } }
+    func outdentLines() { edit { [indentWidth] in LineOps.outdent($0, selection: $1, width: indentWidth) } }
+    func moveLines(up: Bool) { if let m = LineOps.move(string, selections: selections, up: up) { apply(m) } }
+    /// Carets alone duplicate their lines; otherwise each non-empty selection duplicates itself.
+    func duplicateLines() {
+        let allEmpty = selections.allSatisfy { $0.length == 0 }
+        edit { allEmpty || $1.length > 0 ? LineOps.duplicate($0, selection: $1) : nil }
     }
-    func duplicateLines() { apply(LineOps.duplicate(string, selection: selectedRange())) }
-    func deleteLines() { apply(LineOps.deleteLines(string, selection: selectedRange())) }
-    func insertLineBelow() { apply(LineOps.insertLineBelow(string, selection: selectedRange())) }
+    func deleteLines() { edit(LineOps.deleteLines) }
+    func insertLineBelow() { edit(LineOps.insertLineBelow) }
     func selectLines() { setSelectedRange(LineOps.selectLine(string, selection: selectedRange())) }
 
     /// Pastes the clipboard text through `f`, as one undo step.
     func paste(transforming f: (String) -> String) {
-        guard let raw = NSPasteboard.general.string(forType: .string) else { return }
-        let text = f(raw)
-        let sel = selectedRange()
-        apply(TextEdit(range: sel, replacement: text,
-                       selection: NSRange(location: sel.location + (text as NSString).length, length: 0)))
+        guard let raw = NSPasteboard.general.string(forType: .string),
+              let m = Carets.paste(string, selections, clipboard: f(raw)) else { return }
+        apply(m)
     }
 
     func clearAll() {
         guard fullRange.length > 0 else { return }
-        apply(TextEdit(range: fullRange, replacement: "", selection: NSRange(location: 0, length: 0)))
+        apply(MultiEdit(splices: [Splice(range: fullRange, replacement: "")], selections: [NSRange(location: 0, length: 0)]))
     }
 
     /// Tab: indent unit at the caret, or indent every touched line when there is a selection.
@@ -110,10 +130,15 @@ final class EditorView: NSTextView {
     }
     override func insertBacktab(_ sender: Any?) { outdentLines() }
 
-    override func insertNewline(_ sender: Any?) { apply(LineOps.newline(string, selection: selectedRange())) }
+    override func insertNewline(_ sender: Any?) { edit(LineOps.newline) }
 
     override func deleteBackward(_ sender: Any?) {
-        if let edit = LineOps.deleteBackward(string, selection: selectedRange(), width: indentWidth) { apply(edit) } else { super.deleteBackward(sender) }
+        let sel = selectedRange()
+        if let e = LineOps.deleteBackward(string, selection: sel, width: indentWidth) {
+            edit { _, _ in e }
+        } else {
+            super.deleteBackward(sender)
+        }
     }
 
     override func moveToLeftEndOfLine(_ sender: Any?) { smartLineStart(extend: false) { super.moveToLeftEndOfLine(sender) } }
