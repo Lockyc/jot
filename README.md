@@ -19,8 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/lockyc/jot/main/install.sh | bash
 Needs macOS 14 or later. The installer downloads the latest release, checks that it is signed by
 jot's developer and notarized by Apple, installs `/Applications/jot.app` and launches it. jot
 lives in the menu bar; it has no Dock icon. After that jot updates itself: it checks daily, and
-**Check for Updates…** in its menu checks now. From a clone of this repo, Claude Code's
-`/jot:install` runs the same install.
+**Check for Updates…** in its menu checks now.
 
 To build from source instead (needs Xcode's Swift 6 toolchain and
 [`just`](https://github.com/casey/just)):
