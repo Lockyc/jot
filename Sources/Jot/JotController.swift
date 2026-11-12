@@ -249,7 +249,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
-        panel.minSize = NSSize(width: 320, height: 200)
+        panel.minSize = NSSize(width: 200, height: 200)
         panel.delegate = self
 
         banner = NSTextField(labelWithString: "")

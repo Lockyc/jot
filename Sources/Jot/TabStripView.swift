@@ -19,6 +19,9 @@ final class TabStripView: NSStackView, NSMenuDelegate {
             b.imagePosition = .imageLeading
             b.toolTip = "⌘\(i + 1)"
             b.widthAnchor.constraint(lessThanOrEqualToConstant: 140).isActive = true
+            // Labels truncate rather than hold the panel wide; the floor keeps the tab number legible.
+            b.widthAnchor.constraint(greaterThanOrEqualToConstant: 22).isActive = true
+            b.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             let menu = NSMenu()
             menu.delegate = self
             b.menu = menu
