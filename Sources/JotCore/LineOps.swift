@@ -102,6 +102,18 @@ public enum LineOps {
         lineStarts(text, selections, cut: { _ in 0 }, insert: { $0.isEmpty ? "" : unit })
     }
 
+    /// ⇥: indents every touched line when a selection is non-empty or every caret sits on a list
+    /// item; nil when the indent unit belongs at the carets instead.
+    public static func tab(_ text: String, selections: [NSRange], unit: String) -> MultiEdit? {
+        let t = LineTable(text)
+        let onListItems = selections.allSatisfy { s in
+            let line = t.content(t.line(at: s.location))
+            return listMarker(line.drop(while: { $0 == " " || $0 == "\t" })) != nil
+        }
+        guard selections.contains(where: { $0.length > 0 }) || onListItems else { return nil }
+        return indent(text, selections: selections, unit: unit)
+    }
+
     /// ⇧⇥ / ⌘[: one leading tab, or up to `width` leading spaces, off every line the selections touch.
     public static func outdent(_ text: String, selections: [NSRange], width: Int) -> MultiEdit? {
         lineStarts(text, selections, cut: { line in

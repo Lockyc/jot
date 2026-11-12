@@ -33,7 +33,8 @@ lives in the menu bar, with no Dock icon. It updates itself: it checks daily, an
 - **Pin** a tab (⌘P, or right-click it) to keep reference text in it: Clear and Copy & Clear are
   disabled on a pinned tab.
 - **Typing behaves like a code editor.** ↩ keeps the line's indent and continues a `- ` / `* `
-  bullet or a `1. ` / `1) ` numbered list (↩ on an empty item ends the list), ⌫ in leading spaces
+  bullet or a `1. ` / `1) ` numbered list (↩ on an empty item ends the list, ⇥ / ⇧⇥ on an item
+  nests or un-nests it), ⌫ in leading spaces
   removes one indent, and ⌘← goes to the first non-blank character, then to column 0.
 - **Multiple carets** for editing lists: ⇧⌘L puts a caret at the end of every selected line,
   ⌃⇧↑ / ⌃⇧↓ add one above or below, ⌘-click adds one and ⌥-drag selects a column. Typing,

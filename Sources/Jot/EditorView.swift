@@ -136,9 +136,9 @@ final class EditorView: NSTextView {
         apply(MultiEdit(splices: [Splice(range: fullRange, replacement: "")], selections: [NSRange(location: 0, length: 0)]))
     }
 
-    /// Tab: indent unit at the caret, or indent every touched line when there is a selection.
+    /// Tab: indent every touched line (`LineOps.tab`), else the indent unit at each caret.
     override func insertTab(_ sender: Any?) {
-        guard selections.allSatisfy({ $0.length == 0 }) else { indentLines(); return }
+        if let m = LineOps.tab(string, selections: selections, unit: indentUnit) { apply(m); return }
         if hasMultipleCarets {
             edit { [indentUnit] in Carets.replace($1, with: indentUnit) }
         } else {

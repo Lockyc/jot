@@ -30,6 +30,25 @@ final class LineOpsTests: XCTestCase {
         check(LineOps.indent("a\nb\nc", selections: [r(1, 0), r(3, 0), r(5, 0)], unit: "  "), on: "a\nb\nc",
               "  a\n  b\n  c", [r(3, 0), r(7, 0), r(11, 0)])
     }
+    func testTabOnListItemIndentsTheItem() {
+        let t = "- a\n- b"
+        check(LineOps.tab(t, selections: [r(7, 0)], unit: "  "), on: t, "- a\n  - b", [r(9, 0)])
+    }
+    func testTabOnEmptyNumberedItemIndentsIt() {
+        let t = "1. a\n2. "
+        check(LineOps.tab(t, selections: [r(8, 0)], unit: "  "), on: t, "1. a\n  2. ", [r(10, 0)])
+    }
+    func testTabOnIndentedListItemIndentsFurther() {
+        let t = "  * x"
+        check(LineOps.tab(t, selections: [r(5, 0)], unit: "  "), on: t, "    * x", [r(7, 0)])
+    }
+    func testTabOffListLeavesCaretInsertToTheEditor() {
+        XCTAssertNil(LineOps.tab("ab", selections: [r(1, 0)], unit: "  "))
+        XCTAssertNil(LineOps.tab("- a\nb", selections: [r(1, 0), r(5, 0)], unit: "  "))
+    }
+    func testTabWithSelectionIndentsLines() {
+        check(LineOps.tab(text, selections: [r(1, 5)], unit: "  "), on: text, "  one\n  two\nthree")
+    }
     func testOutdentSpaces() {
         let t = "    a\n  b\nc"
         check(LineOps.outdent(t, selections: [r(0, 11)], width: 2), on: t, "  a\nb\nc", [r(0, 7)])
