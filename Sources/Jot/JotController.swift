@@ -15,7 +15,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     private var contentStack: NSStackView!
     private var statusItem: NSStatusItem!
     private var keyMonitor: Any?
-    private var toolbar: ToolbarView!
+    private(set) var toolbar: ToolbarView!
     private(set) var palette: PaletteView!
     private lazy var settingsWindow = SettingsWindowController(controller: self)
 
@@ -33,6 +33,17 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
 
     func start() {
         NSApp.mainMenu = MainMenu.build()
+        build()
+        buildStatusItem()
+        hotKey.onPress = { [weak self] in self?.toggle() }
+        registerHotKey()
+        installKeyMonitor()
+        show()
+    }
+
+    /// The panel, editor, toolbar and palette, loaded with the active tab and never shown: what
+    /// `start` puts on screen, and all a test needs. No status item, hotkey or key monitor.
+    func build() {
         buildPanel()
         rebuildCommands()
         toolbar = ToolbarView(lookup: { [unowned self] id in self.commands.first { $0.id == id } },
@@ -56,14 +67,9 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
             palette.widthAnchor.constraint(equalTo: content.widthAnchor, multiplier: 0.8),
             palette.heightAnchor.constraint(equalToConstant: 280),
         ])
-        buildStatusItem()
         store.onSaveResult = { [weak self] in self?.showSaveError($0) }
-        hotKey.onPress = { [weak self] in self?.toggle() }
-        registerHotKey()
         applySettingsToEditor()
         loadTab(activeTab)
-        installKeyMonitor()
-        show()
     }
 
     func rebuildCommands() { commands = makeCommands() }

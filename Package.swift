@@ -12,6 +12,7 @@ let package = Package(
         .target(name: "JotCore"),
         .executableTarget(name: "Jot", dependencies: ["JotCore", .product(name: "Sparkle", package: "Sparkle")]),
         .testTarget(name: "JotCoreTests", dependencies: ["JotCore", .product(name: "PropertyBased", package: "swift-property-based")]),
+        .testTarget(name: "JotTests", dependencies: ["Jot", "JotCore"]),
     ],
     swiftLanguageModes: [.v5]
 )

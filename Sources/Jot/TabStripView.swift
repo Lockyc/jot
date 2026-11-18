@@ -4,7 +4,7 @@ import JotCore
 final class TabStripView: NSStackView, NSMenuDelegate {
     var onSelect: ((Int) -> Void)?
     var populateMenu: ((Int, NSMenu) -> Void)?
-    private var buttons: [NSButton] = []
+    private(set) var buttons: [NSButton] = []
 
     init() {
         super.init(frame: .zero)

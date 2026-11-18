@@ -4,7 +4,7 @@ import AppKit
 /// availability come from the registry.
 final class ToolbarView: NSStackView {
     let tabs = TabStripView()
-    private var buttons: [String: NSButton] = [:]
+    private(set) var buttons: [String: NSButton] = [:]
     private let lookup: (String) -> Command?
     private let run: (String) -> Void
 
