@@ -94,7 +94,7 @@ public enum LineOps {
             let end = t.end(r.upperBound) + edits.filter { $0.line <= r.upperBound }.reduce(0) { $0 + delta($1) }
             return NSRange(location: start, length: end - start)
         }
-        return MultiEdit(splices: edits.map(\.splice), selections: mapped)
+        return MultiEdit(splices: edits.map(\.splice), selections: MultiEdit.normalize(mapped))
     }
 
     /// ⇥ on a selection / ⌘]: the indent unit before every non-empty line the selections touch.

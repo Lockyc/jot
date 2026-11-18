@@ -26,6 +26,9 @@ final class LineOpsTests: XCTestCase {
     func testIndentTwoCaretsOneLineKeepsBoth() {
         check(LineOps.indent("abc", selections: [r(1, 0), r(2, 0)], unit: "  "), on: "abc", "  abc", [r(3, 0), r(4, 0)])
     }
+    func testIndentCaretInsideGrownSelectionIsAbsorbed() {
+        check(LineOps.indent("ab", selections: [r(0, 0), r(0, 1)], unit: "  "), on: "ab", "  ab", [r(0, 4)])
+    }
     func testIndentCaretsOnSeparateLines() {
         check(LineOps.indent("a\nb\nc", selections: [r(1, 0), r(3, 0), r(5, 0)], unit: "  "), on: "a\nb\nc",
               "  a\n  b\n  c", [r(3, 0), r(7, 0), r(11, 0)])
