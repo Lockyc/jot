@@ -20,11 +20,14 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
 ## Layout
 
 - `Sources/JotCore/` — Foundation/CoreGraphics only: text transforms, line operations,
-  multi-caret composition (`MultiEdit`, `Carets`), fuzzy match, the hotkey toggle rule, panel placement, persistence. Keep AppKit out of it, so its rules stay unit-testable.
+  multi-caret composition (`MultiEdit`, `Carets`), fuzzy match, the hotkey toggle rule, the
+  panel's show/hide/tab/command decisions (`PanelSession`), panel placement, persistence. Keep AppKit out of it, so its rules stay unit-testable.
 - `Sources/Jot/` — the AppKit executable. `JotController` owns the panel, store, hotkey and
-  tabs; `Commands.swift` is the command registry.
+  tabs, and carries out `PanelSession`'s effects without deciding anything; `Commands.swift` is
+  the command registry.
 - `Tests/JotCoreTests/` — XCTest examples, plus Swift Testing property tests (`PropertyBased`,
-  test-only) over the multi-caret ops; `swift test`.
+  test-only) over the multi-caret ops and a model test of `PanelSession` over a real
+  `NoteStore`; `swift test`.
 - `Tests/JotTests/` — the AppKit views and `JotController.build()`, never shown: every case
   extends `OffscreenTestCase`, whose tearDown fails on a visible window or an active app.
 - `Support/Info.plist` — bundle template; `just bundle` stamps `VERSION` into it.
