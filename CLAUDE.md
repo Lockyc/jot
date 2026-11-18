@@ -23,7 +23,8 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
   multi-caret composition (`MultiEdit`, `Carets`), fuzzy match, the hotkey toggle rule, panel placement, persistence. **Every unit test lives here**; keep AppKit out of it.
 - `Sources/Jot/` — the AppKit executable. `JotController` owns the panel, store, hotkey and
   tabs; `Commands.swift` is the command registry.
-- `Tests/JotCoreTests/` — XCTest, `swift test`.
+- `Tests/JotCoreTests/` — XCTest examples, plus Swift Testing property tests (`PropertyBased`,
+  test-only) over the multi-caret ops; `swift test`.
 - `Support/Info.plist` — bundle template; `just bundle` stamps `VERSION` into it.
 - `Support/icon.svg` — the app icon master; `just icons` renders `AppIcon.icns` and `icon.png` from it.
 
