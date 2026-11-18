@@ -113,8 +113,7 @@ extension JotController {
     func appCommands() -> [Command] {
         [
             Command(id: "palette", title: "Command Palette", group: .app, keys: [KeyCombo(kVK_ANSI_K, .command)]) { [unowned self] in
-                self.show()
-                self.palette.open()
+                self.openPalette()
             },
             Command(id: "settings", title: "Settings…", group: .app, keys: [KeyCombo(kVK_ANSI_Comma, .command)]) { [unowned self] in
                 self.openSettings()

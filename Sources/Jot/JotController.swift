@@ -74,45 +74,52 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
 
     func rebuildCommands() { commands = makeCommands() }
 
-    // MARK: Toggle
+    // MARK: Session
 
-    func toggle() {
-        switch ToggleRule.action(panelVisible: panel.isVisible, appActive: NSApp.isActive) {
-        case .hide: hide()
-        case .show: show()
+    /// The state `PanelSession`'s decisions read, as it is now.
+    var session: PanelSession {
+        PanelSession(visible: panel.isVisible, appActive: NSApp.isActive, paletteOpen: palette.isOpen, activeTab: activeTab)
+    }
+
+    func toggle() { carryOut(session.toggle()) }
+    func show() { carryOut(session.show()) }
+    func hide() { carryOut(session.hide()) }
+    func flush() { carryOut(session.save()) }
+    func openPalette() { carryOut(session.openPalette()) }
+    func selectTab(_ i: Int) { carryOut(session.selectTab(i)) }
+
+    /// Performs a `PanelSession` decision's effects in order; `command` is what `.runCommand` runs.
+    private func carryOut(_ effects: [PanelSession.Effect], command: Command? = nil) {
+        for effect in effects {
+            switch effect {
+            case .pickUpOutsideEdit:
+                guard store.reloadIfChangedOnDisk(activeTab) else { continue }
+                discardUndo(activeTab)
+                loadTab(activeTab)
+            case .activateApp:
+                // activate(ignoringOtherApps:) rather than the cooperative activate(): an accessory
+                // app summoned by a hotkey is not handed activation by the frontmost app.
+                NSApp.activate(ignoringOtherApps: true)
+            case .centre: centreOnCursor()
+            case .orderFront: panel.makeKeyAndOrderFront(nil)
+            case .focusEditor: panel.makeFirstResponder(editor)
+            case .openPalette: palette.open()
+            case .closePalette: palette.close()
+            case .writeBack: store.setText(editor.string, tab: activeTab)
+            case .flush: store.flushReportingResult()
+            case .orderOut: panel.orderOut(nil)
+            case .hideApp: NSApp.hide(nil)
+            case .rememberSelection: rememberSelection()
+            case .switchTo(let i):
+                store.updateState { $0.activeTab = i }
+                if store.reloadIfChangedOnDisk(i) { discardUndo(i) }
+                loadTab(i)
+            case .refreshChrome: refreshChrome()
+            case .runCommand:
+                guard let command else { continue }
+                if command.disabledReason() == nil { command.run() } else { NSSound.beep() }
+            }
         }
-    }
-
-    /// Picks up an outside edit to the visible note before anything reads or rewrites the editor:
-    /// on show, when the panel becomes key (clicked back into, no hotkey), and before every command.
-    func reloadActiveIfChangedOnDisk() {
-        guard store.reloadIfChangedOnDisk(activeTab) else { return }
-        discardUndo(activeTab)
-        loadTab(activeTab)
-    }
-
-    func show() {
-        reloadActiveIfChangedOnDisk()
-        // activate(ignoringOtherApps:) rather than the cooperative activate(): an accessory app
-        // summoned by a hotkey is not handed activation by the frontmost app.
-        NSApp.activate(ignoringOtherApps: true)
-        // Only a panel coming on screen moves; one already showing (⌘K, the hotkey from another
-        // app) stays where the user put it.
-        if !panel.isVisible { centreOnCursor() }
-        panel.makeKeyAndOrderFront(nil)
-        panel.makeFirstResponder(editor)
-    }
-
-    func hide() {
-        if palette.isOpen { palette.close() }
-        flush()
-        panel.orderOut(nil)
-        NSApp.hide(nil)
-    }
-
-    func flush() {
-        store.setText(editor.string, tab: activeTab)
-        store.flushReportingResult()
     }
 
     // MARK: Hotkey + settings
@@ -149,16 +156,6 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         editor.wraps = store.state.wrap[i]
         editor.scrollRangeToVisible(editor.selectedRange())
         refreshChrome()
-    }
-
-    func selectTab(_ i: Int) {
-        // The button is .pushOnPushOff, so a click on the active tab turned it off: put it back.
-        guard i != activeTab else { refreshChrome(); return }
-        rememberSelection()
-        store.setText(editor.string, tab: activeTab)
-        store.updateState { $0.activeTab = i }
-        if store.reloadIfChangedOnDisk(i) { discardUndo(i) }
-        loadTab(i)
     }
 
     func togglePin(_ i: Int) {
@@ -205,10 +202,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
 
     // MARK: Commands
 
-    func perform(_ command: Command) {
-        reloadActiveIfChangedOnDisk()
-        if command.disabledReason() == nil { command.run() } else { NSSound.beep() }
-    }
+    func perform(_ command: Command) { carryOut(session.command(), command: command) }
 
     func run(_ id: String) {
         guard let command = commands.first(where: { $0.id == id }) else { return }
@@ -307,7 +301,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         hide()
         return false
     }
-    func windowDidBecomeKey(_ notification: Notification) { reloadActiveIfChangedOnDisk() }
+    func windowDidBecomeKey(_ notification: Notification) { carryOut(session.becameKey()) }
     func windowDidMove(_ notification: Notification) { saveFrame() }
     func windowDidResize(_ notification: Notification) { saveFrame() }
     private func saveFrame() {
