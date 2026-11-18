@@ -91,6 +91,9 @@ final class LineOpsTests: XCTestCase {
         XCTAssertEqual(LineOps.move(text, selections: [r(5, 0)], up: true),
                        MultiEdit(splices: [Splice(range: r(0, 7), replacement: "two\none")], selections: [r(1, 0)]))
     }
+    func testMoveDownToEndDropsTheSelectedNewline() {
+        check(LineOps.move("a\nb", selections: [r(0, 2)], up: false), on: "a\nb", "b\na", [r(2, 1)])
+    }
     func testMoveUpFirstLineIsNil() {
         XCTAssertNil(LineOps.move(text, selections: [r(1, 0)], up: true))
     }

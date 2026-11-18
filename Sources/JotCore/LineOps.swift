@@ -122,7 +122,8 @@ public enum LineOps {
     }
 
     /// ⌥↑/⌥↓: every block of contiguous lines the selections touch swaps with the line beyond it,
-    /// carrying its selections. nil when any block is already at the edge.
+    /// carrying its selections. nil when any block is already at the edge. A selection that took
+    /// its last line's newline loses it when that line moves to the end of the text.
     public static func move(_ text: String, selections: [NSRange], up: Bool) -> MultiEdit? {
         let t = LineTable(text), sels = MultiEdit.normalize(selections)
         guard !sels.isEmpty else { return nil }
@@ -137,7 +138,8 @@ public enum LineOps {
         let moved = sels.map { s -> NSRange in
             let b = blocks.first { $0.contains(t.line(at: s.location)) }!
             let shift = up ? -(length(t.content(b.lowerBound - 1)) + 1) : length(t.content(b.upperBound + 1)) + 1
-            return NSRange(location: s.location + shift, length: s.length)
+            let location = s.location + shift
+            return NSRange(location: location, length: min(s.length, t.ns.length - location))
         }
         return MultiEdit(splices: splices, selections: moved)
     }
