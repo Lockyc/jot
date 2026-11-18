@@ -174,11 +174,13 @@ public enum LineOps {
                          selections: carets)
     }
 
-    /// ⇧⌘K: every block of contiguous touched lines is removed, one caret left per block.
+    /// ⇧⌘K: every block of contiguous touched lines is removed, one caret left per block. Each
+    /// block's span maps back to its lines by its two ends: a span ending on an empty line ends at
+    /// that line's start, which `lines(covering:)` would drop.
     public static func deleteLines(_ text: String, selections: [NSRange]) -> MultiEdit? {
         let t = LineTable(text)
         let spans = blocks(t, MultiEdit.normalize(selections)).map { t.span($0.lowerBound, $0.upperBound) }
-        return MultiEdit.perSelection(text, spans) { deleteLines(text, selection: $0) }
+        return MultiEdit.perSelection(text, spans) { deleteLines(t, t.line(at: $0.location)...t.line(at: NSMaxRange($0))) }
     }
 
     /// The list marker opening `s` (`- `, `* `, `3. `, `3) `) and the one the next item takes.
@@ -242,7 +244,12 @@ public enum LineOps {
 
     /// ⇧⌘K: removes every line the selection touches, with one adjoining newline.
     public static func deleteLines(_ text: String, selection sel: NSRange) -> TextEdit {
-        let t = LineTable(text), r = t.lines(covering: sel)
+        let t = LineTable(text)
+        return deleteLines(t, t.lines(covering: sel))
+    }
+
+    /// Removes lines `r`, with one adjoining newline.
+    static func deleteLines(_ t: LineTable, _ r: ClosedRange<Int>) -> TextEdit {
         let range: NSRange, caret: Int
         if r.upperBound + 1 < t.count {
             range = NSRange(location: t.starts[r.lowerBound], length: t.starts[r.upperBound + 1] - t.starts[r.lowerBound])

@@ -68,6 +68,10 @@ final class LineOpsTests: XCTestCase {
     func testDeleteLinesAdjacentCaretsCollapse() {
         check(LineOps.deleteLines("a\nb\nc", selections: [r(0, 0), r(2, 0)]), on: "a\nb\nc", "c", [r(0, 0)])
     }
+    func testDeleteLinesBlockEndingOnEmptyLine() {
+        check(LineOps.deleteLines("a\n\nb", selections: [r(0, 0), r(2, 0)]), on: "a\n\nb", "b", [r(0, 0)])
+        check(LineOps.deleteLines("a\n\nb", selections: [r(0, 3)]), on: "a\n\nb", "b", [r(0, 0)])
+    }
     func testDeleteLinesSeparateBlocks() {
         check(LineOps.deleteLines("a\nb\nc", selections: [r(0, 0), r(4, 0)]), on: "a\nb\nc", "b", [r(0, 0)])
     }
