@@ -82,6 +82,13 @@ lives in the menu bar, with no Dock icon. It updates itself: it checks daily, an
 | Quit jot | ⌘Q |
 | Dedent · Trim Trailing Whitespace · Sort Lines A→Z · Sort Lines Z→A · Remove Duplicate Lines · Remove Blank Lines · Unwrap Lines · Join Lines · Split on Delimiter… · UPPERCASE · lowercase · Title Case · Number Lines · Check for Updates… | ⌘K |
 
+## Limits
+
+- Shortcuts follow US key positions; on other layouts some differ, and ⌥Z types Ω.
+- Unwrap Lines guesses the terminal width from the longest line, so a selection of only code can
+  be joined wrongly.
+- Strip Quote Gutter leaves Claude Code's `⎿` continuation lines indented.
+
 ## Status
 
 In use, `0.x`. What's next: [docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
