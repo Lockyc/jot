@@ -88,6 +88,27 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.text(0), "unsaved")
     }
 
+    func testAnOutsideEditUnderAnUnsavedOneIsKeptAsAConflictCopy() throws {
+        let store = NoteStore(folder: dir)
+        try store.flush()
+        let url = store.noteURL(0)
+        try Data("theirs".utf8).write(to: url)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(10)], ofItemAtPath: url.path)
+        var copied: URL?
+        store.onConflictCopy = { copied = $0 }
+        store.setText("mine", tab: 0)
+        try store.flush()
+        XCTAssertEqual(try String(contentsOf: url, encoding: .utf8), "mine")
+        let copy = try XCTUnwrap(copied)
+        XCTAssertTrue(copy.lastPathComponent.hasPrefix("1.conflict-"))
+        XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), "theirs")
+        // A save with no outside change makes no copy.
+        copied = nil
+        store.setText("mine again", tab: 0)
+        try store.flush()
+        XCTAssertNil(copied)
+    }
+
     func testNonUTF8NoteIsDecodedNotBlanked() throws {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try "café".data(using: .isoLatin1)!.write(to: dir.appendingPathComponent("1.txt"))

@@ -9,6 +9,9 @@ public final class NoteStore {
     public let folder: URL
     public private(set) var state: JotState
     public var onSaveResult: ((Error?) -> Void)?
+    /// A note changed outside jot while it held an unsaved edit: that outside version was copied
+    /// here before jot's edit replaced it.
+    public var onConflictCopy: ((URL) -> Void)?
 
     private var texts: [String]
     private var diskStamps: [Date?]
@@ -50,6 +53,21 @@ public final class NoteStore {
     }
 
     public func noteURL(_ tab: Int) -> URL { Self.noteURL(in: folder, tab) }
+
+    /// Where an outside version of note `tab` is kept: `N.conflict-<yyyyMMdd-HHmmss>.txt`, beside it.
+    private func conflictURL(_ tab: Int) -> URL {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyyMMdd-HHmmss"
+        let stamp = f.string(from: Date())
+        var url = folder.appendingPathComponent("\(tab + 1).conflict-\(stamp).txt")
+        var n = 2
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = folder.appendingPathComponent("\(tab + 1).conflict-\(stamp)-\(n).txt")
+            n += 1
+        }
+        return url
+    }
     public func text(_ tab: Int) -> String { texts[tab] }
 
     public func setText(_ text: String, tab: Int) {
@@ -87,6 +105,13 @@ public final class NoteStore {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         for tab in dirtyTabs.sorted() {
             let url = noteURL(tab)
+            // Changed outside jot since jot last read or wrote it: keep that version beside the
+            // note before jot's edit replaces it, so neither side's text is lost.
+            if let onDisk = Self.modificationDate(url), onDisk != diskStamps[tab] {
+                let copy = conflictURL(tab)
+                try FileManager.default.copyItem(at: url, to: copy)
+                onConflictCopy?(copy)
+            }
             try Data(texts[tab].utf8).write(to: url, options: .atomic)
             diskStamps[tab] = Self.modificationDate(url)
             dirtyTabs.remove(tab)

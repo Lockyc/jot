@@ -68,6 +68,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
             palette.heightAnchor.constraint(equalToConstant: 280),
         ])
         store.onSaveResult = { [weak self] in self?.showSaveError($0) }
+        store.onConflictCopy = { [weak self] in self?.showConflictCopy($0) }
         applySettingsToEditor()
         loadTab(activeTab)
     }
@@ -84,7 +85,18 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     func toggle() { carryOut(session.toggle()) }
     func show() { carryOut(session.show()) }
     func hide() { carryOut(session.hide()) }
-    func flush() { carryOut(session.save()) }
+    /// The save before quitting: false when it failed, with the banner saying so and a retry
+    /// scheduled, so the caller keeps the app (and the edits only it holds) alive.
+    func saveForQuit() -> Bool {
+        store.setText(editor.string, tab: activeTab)
+        do {
+            try store.flush()
+            return true
+        } catch {
+            store.flushReportingResult()
+            return false
+        }
+    }
     func openPalette() { carryOut(session.openPalette()) }
     func selectTab(_ i: Int) { carryOut(session.selectTab(i)) }
 
@@ -322,6 +334,11 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     private func showSaveError(_ error: Error?) {
         banner.stringValue = error == nil ? "" : "  Can't save to \(store.folder.path) — retrying. Your edits are kept."
         banner.isHidden = error == nil
+    }
+
+    private func showConflictCopy(_ copy: URL) {
+        banner.stringValue = "  This note changed outside jot; that version is kept as \(copy.lastPathComponent)."
+        banner.isHidden = false
     }
 
     // MARK: Status item

@@ -8,7 +8,7 @@ final class EditorView: NSTextView {
     var indentWidth = 2
     /// The caret list while there are two or more, in document order; empty otherwise, when the
     /// native selection is the only one. AppKit holds only the non-empty ones (or the primary);
-    /// the other empty carets are drawn by `draw(_:)`.
+    /// the other empty carets are drawn by `drawBackground(in:)`.
     var carets: [NSRange] = []
     /// The moving end of each caret, for ⇧-extended moves.
     var heads: [Int] = []

@@ -10,7 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.start()
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
-        controller.flush()
+    /// Quits only once the notes are on disk: a failed save keeps jot running with the panel up
+    /// and the banner saying why, since the edits exist nowhere else.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if controller.saveForQuit() { return .terminateNow }
+        controller.show()
+        return .terminateCancel
     }
 }

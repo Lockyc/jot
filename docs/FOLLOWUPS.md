@@ -36,7 +36,7 @@ Accepted limitations and small fixes not yet done. Remove an item when it lands.
 - **Multi-caret edits cost carets × note length.** Each caret's op builds its own `LineTable`
   and `perSelection` sums deltas per caret. Next: one `LineTable` per edit, passed to the ops,
   once ⇧⌘L over a large note lags.
-- **Extra carets don't blink**; only the primary does. Next: a timer toggling the `draw(_:)`
+- **Extra carets don't blink**; only the primary does. Next: a timer toggling the `drawBackground(in:)`
   overlay in step with `insertionPointBlinkPeriod`.
 - **CRLF in line operations.** `LineOps` splits on LF only; a CRLF note leaves a stray `\r` on
   line moves (jot itself writes LF).

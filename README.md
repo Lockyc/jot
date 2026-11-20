@@ -29,7 +29,8 @@ lives in the menu bar, with no Dock icon. It updates itself: it checks daily, an
   ⎋ also hides it.
 - **Seven tabs**, ⌘1–⌘7, each labelled by its note's first line. Each tab is a plain file in
   `~/Documents/jot/` (`1.txt` … `7.txt`): grep it, edit it elsewhere, and jot picks up the
-  change the next time it shows. Nothing syncs.
+  change the next time it shows. A note changed elsewhere while jot holds an unsaved edit is kept
+  beside it as `N.conflict-<date>.txt`. Nothing syncs.
 - **Pin** a tab (⌘P, or right-click it) to keep reference text in it: Clear and Copy & Clear are
   disabled on a pinned tab.
 - **Typing behaves like a code editor.** ↩ keeps the line's indent and continues a `- ` / `* `

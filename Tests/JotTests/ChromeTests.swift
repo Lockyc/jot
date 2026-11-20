@@ -3,6 +3,21 @@ import XCTest
 @testable import Jot
 import JotCore
 
+final class QuitTests: OffscreenTestCase {
+    /// An unwritable notes folder makes the quit-time save fail, so the quit is refused; a
+    /// writable one lets it through.
+    func testAFailedSaveRefusesTheQuit() throws {
+        let controller = makeController(notes: ["one"])
+        controller.editor.string = "edited"
+        XCTAssertTrue(controller.saveForQuit())
+        let folder = controller.store.folder
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path) }
+        controller.editor.string = "edited again"
+        XCTAssertFalse(controller.saveForQuit())
+    }
+}
+
 final class EditorViewTests: OffscreenTestCase {
     /// Every edit goes through `apply`; nothing on that path may drop the editor to TextKit 1.
     func testMultiCaretEditStaysOnTextKit2() {

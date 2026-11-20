@@ -57,7 +57,7 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
 ## Build, test, verify, branches
 
 - `just test`, `just gate`; `just run` builds and launches `build/jot.app`.
-- Verify UI changes in the running app with `winshot` / `windrive`. Quit Tot first if it is
+- Verify UI changes in the running app. Quit Tot first if it is
   running (`pkill -x Tot`): it holds ⌃⇧T too. A locked screen (front app `loginwindow`) swallows
   synthetic keys — check `lsappinfo front` before driving.
 - Branches: `main` + `dev`. Work lands on `dev`; a release fast-forwards `main` from `dev`
@@ -66,4 +66,4 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
 - Version: the root `VERSION` file is the only source; a release tags `v<VERSION>` and publishes
   a GitHub release with notes, `jot.zip` and the Sparkle `appcast.xml` the app's `SUFeedURL`
   reads. The release interface: `just gate`, `VERSION`, `just bundle` (signs with
-  `APPLE_SIGNING_IDENTITY`, ad-hoc without it), `info_plist`, `just sparkle-bin`.
+  `APPLE_SIGNING_IDENTITY`, else the keychain's Developer ID, else ad-hoc), `info_plist`, `just sparkle-bin`.
