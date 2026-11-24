@@ -18,8 +18,8 @@ let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
 
-// AppKit exits on SIGTERM (pkill, killall, a logout) without applicationWillTerminate, so the
-// final flush never ran; route the signal through terminate so pending edits are saved.
+// AppKit exits on SIGTERM (pkill, killall, a logout) without asking the delegate; routing the
+// signal through terminate runs applicationShouldTerminate, which saves pending edits first.
 signal(SIGTERM, SIG_IGN)
 let sigterm = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
 sigterm.setEventHandler { NSApp.terminate(nil) }
