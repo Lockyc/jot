@@ -31,14 +31,15 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         super.init()
     }
 
-    func start() {
+    /// `showing: false` leaves jot in the menu bar without a window or focus until the hotkey.
+    func start(showing: Bool) {
         NSApp.mainMenu = MainMenu.build()
         build()
         buildStatusItem()
         hotKey.onPress = { [weak self] in self?.toggle() }
         registerHotKey()
         installKeyMonitor()
-        show()
+        if showing { show() }
     }
 
     /// The panel, editor, toolbar and palette, loaded with the active tab and never shown: what

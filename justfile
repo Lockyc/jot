@@ -92,10 +92,11 @@ quit:
     killall -9 Jot 2>/dev/null
     while pgrep -x Jot >/dev/null; do sleep 0.1; done
 
-# Opens the app at `path`, retrying for up to 5s: LaunchServices keeps a quit Jot on its
-# books briefly after the process is gone, and `open` fails with error -600 until it lets go.
+# Opens the app at `path` in the background (no focus, no panel until the hotkey), retrying for
+# up to 5s: LaunchServices keeps a quit Jot on its books briefly after the process is gone, and
+# `open` fails with error -600 until it lets go.
 [private]
 launch path:
     #!/usr/bin/env bash
-    for _ in {1..20}; do open "{{path}}" 2>/dev/null && exit 0; sleep 0.25; done
-    open "{{path}}"
+    for _ in {1..20}; do open -g -j "{{path}}" --args --background 2>/dev/null && exit 0; sleep 0.25; done
+    open -g -j "{{path}}" --args --background

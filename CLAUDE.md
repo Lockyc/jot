@@ -56,7 +56,8 @@ notes. Swift package, AppKit, one dependency, Sparkle (self-update), macOS 14+. 
 
 ## Build, test, verify, branches
 
-- `just test`, `just gate`; `just run` builds and launches `build/jot.app`.
+- `just test`, `just gate`; `just run` builds and launches `build/jot.app` with `--background`:
+  menu bar only, no focus taken, the panel waits for the hotkey.
 - Verify UI changes in the running app. Quit Tot first if it is
   running (`pkill -x Tot`): it holds ⌃⇧T too. A locked screen (front app `loginwindow`) swallows
   synthetic keys — check `lsappinfo front` before driving.

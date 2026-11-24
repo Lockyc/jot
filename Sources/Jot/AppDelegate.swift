@@ -7,7 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         controller = JotController(store: NoteStore(folder: documents.appendingPathComponent("jot")))
-        controller.start()
+        // `--background`: the launch takes no focus and puts no window up (`just run`, `just install`).
+        controller.start(showing: !CommandLine.arguments.contains("--background"))
     }
 
     /// Quits only once the notes are on disk: a failed save keeps jot running with the panel up
