@@ -106,10 +106,12 @@ public final class NoteStore {
         for tab in dirtyTabs.sorted() {
             let url = noteURL(tab)
             // Changed outside jot since jot last read or wrote it: keep that version beside the
-            // note before jot's edit replaces it, so neither side's text is lost.
+            // note before jot's edit replaces it, so neither side's text is lost. Once copied, that
+            // version counts as seen, so a write that fails and is retried is not copied again.
             if let onDisk = Self.modificationDate(url), onDisk != diskStamps[tab] {
                 let copy = conflictURL(tab)
                 try FileManager.default.copyItem(at: url, to: copy)
+                diskStamps[tab] = onDisk
                 onConflictCopy?(copy)
             }
             try Data(texts[tab].utf8).write(to: url, options: .atomic)

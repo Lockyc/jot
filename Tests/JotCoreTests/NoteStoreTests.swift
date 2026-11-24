@@ -109,6 +109,30 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertNil(copied)
     }
 
+    /// A write that fails after the copy is retried as a write only: one copy, however many tries.
+    func testAFailedWriteAfterAConflictCopyIsNotCopiedAgain() throws {
+        let store = NoteStore(folder: dir)
+        try store.flush()
+        // A non-empty directory at the note's path: copying it works, writing over it fails.
+        let url = store.noteURL(0)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+        try Data("theirs".utf8).write(to: url.appendingPathComponent("keep"))
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(10)], ofItemAtPath: url.path)
+        var copies = 0
+        store.onConflictCopy = { _ in copies += 1 }
+        store.setText("mine", tab: 0)
+        XCTAssertThrowsError(try store.flush())
+        XCTAssertThrowsError(try store.flush())
+        XCTAssertThrowsError(try store.flush())
+        XCTAssertEqual(copies, 1)
+        let conflicts = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("1.conflict-") }
+        XCTAssertEqual(conflicts.count, 1)
+        try FileManager.default.removeItem(at: url)
+        try store.flush()
+        XCTAssertEqual(try read("1.txt"), "mine")
+        XCTAssertEqual(copies, 1)
+    }
+
     func testNonUTF8NoteIsDecodedNotBlanked() throws {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try "café".data(using: .isoLatin1)!.write(to: dir.appendingPathComponent("1.txt"))
