@@ -19,6 +19,17 @@ final class QuitTests: OffscreenTestCase {
 }
 
 final class BannerTests: OffscreenTestCase {
+    func testAnUnreadableStateFileIsNamedAtLaunch() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("jot-tests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try Data("{not json".utf8).write(to: folder.appendingPathComponent("state.json"))
+        let controller = JotController(store: NoteStore(folder: folder))
+        controller.build()
+        XCTAssertFalse(controller.banner.isHidden)
+        XCTAssertTrue(controller.banner.stringValue.contains("state.unreadable-"), controller.banner.stringValue)
+    }
+
     /// The save that makes a conflict copy succeeds, and that success must not clear the notice.
     func testAConflictCopyIsNamedAfterTheSaveSucceeds() throws {
         let controller = makeController(notes: ["one"])

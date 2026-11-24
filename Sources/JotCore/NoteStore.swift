@@ -12,6 +12,9 @@ public final class NoteStore {
     /// A note changed outside jot while it held an unsaved edit: that outside version was copied
     /// here before jot's edit replaced it.
     public var onConflictCopy: ((URL) -> Void)?
+    /// state.json was there but would not decode: it was moved here and the defaults used, so
+    /// the next save does not overwrite it.
+    public private(set) var unreadableState: URL?
 
     private var texts: [String]
     private var diskStamps: [Date?]
@@ -27,9 +30,15 @@ public final class NoteStore {
         let urls = (0..<Self.tabCount).map { Self.noteURL(in: folder, $0) }
         texts = urls.map(Self.readNote)
         diskStamps = urls.map(Self.modificationDate)
-        if let data = try? Data(contentsOf: Self.stateURL(in: folder)),
-           let decoded = try? JSONDecoder().decode(JotState.self, from: data) {
-            state = decoded
+        let stateURL = Self.stateURL(in: folder)
+        if let data = try? Data(contentsOf: stateURL) {
+            if let decoded = try? JSONDecoder().decode(JotState.self, from: data) {
+                state = decoded
+            } else {
+                state = JotState()
+                let aside = Self.asideURL(in: folder, "state.unreadable", ext: "json")
+                if (try? FileManager.default.moveItem(at: stateURL, to: aside)) != nil { unreadableState = aside }
+            }
         } else {
             state = JotState()
         }
@@ -54,20 +63,23 @@ public final class NoteStore {
 
     public func noteURL(_ tab: Int) -> URL { Self.noteURL(in: folder, tab) }
 
-    /// Where an outside version of note `tab` is kept: `N.conflict-<yyyyMMdd-HHmmss>.txt`, beside it.
-    private func conflictURL(_ tab: Int) -> URL {
+    /// A free `<name>-<yyyyMMdd-HHmmss>.<ext>` in `folder`, for a file kept aside rather than lost.
+    static func asideURL(in folder: URL, _ name: String, ext: String) -> URL {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyyMMdd-HHmmss"
         let stamp = f.string(from: Date())
-        var url = folder.appendingPathComponent("\(tab + 1).conflict-\(stamp).txt")
+        var url = folder.appendingPathComponent("\(name)-\(stamp).\(ext)")
         var n = 2
         while FileManager.default.fileExists(atPath: url.path) {
-            url = folder.appendingPathComponent("\(tab + 1).conflict-\(stamp)-\(n).txt")
+            url = folder.appendingPathComponent("\(name)-\(stamp)-\(n).\(ext)")
             n += 1
         }
         return url
     }
+
+    /// Where an outside version of note `tab` is kept: `N.conflict-<yyyyMMdd-HHmmss>.txt`, beside it.
+    private func conflictURL(_ tab: Int) -> URL { Self.asideURL(in: folder, "\(tab + 1).conflict", ext: "txt") }
     public func text(_ tab: Int) -> String { texts[tab] }
 
     public func setText(_ text: String, tab: Int) {

@@ -33,10 +33,19 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(reopened.state.activeTab, 2)
         XCTAssertEqual(reopened.state.settings.fontSize, 16)
     }
-    func testCorruptStateFallsBackToDefaults() throws {
+    /// An undecodable state.json is moved aside before the defaults can be saved over it.
+    func testCorruptStateIsKeptAsideAndDefaultsUsed() throws {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data("{not json".utf8).write(to: dir.appendingPathComponent("state.json"))
-        XCTAssertEqual(NoteStore(folder: dir).state, JotState())
+        let store = NoteStore(folder: dir)
+        XCTAssertEqual(store.state, JotState())
+        let kept = try XCTUnwrap(store.unreadableState)
+        XCTAssertTrue(kept.lastPathComponent.hasPrefix("state.unreadable-"), kept.lastPathComponent)
+        XCTAssertEqual(try String(contentsOf: kept, encoding: .utf8), "{not json")
+        store.updateState { $0.activeTab = 3 }
+        try store.flush()
+        XCTAssertEqual(try String(contentsOf: kept, encoding: .utf8), "{not json")
+        XCTAssertNil(NoteStore(folder: dir).unreadableState)
     }
     func testPartialStateIsNormalized() throws {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

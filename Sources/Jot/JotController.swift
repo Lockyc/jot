@@ -69,6 +69,10 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         ])
         store.onSaveResult = { [weak self] in self?.showSaveError($0) }
         store.onConflictCopy = { [weak self] in self?.showConflictCopy($0) }
+        if let kept = store.unreadableState {
+            notice = "state.json couldn't be read, so jot started with default settings; it is kept as \(kept.lastPathComponent)."
+            refreshBanner()
+        }
         applySettingsToEditor()
         loadTab(activeTab)
     }
@@ -349,7 +353,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         refreshBanner()
     }
 
-    /// Stays until the next tab switch.
+    /// A notice stays until the next tab switch.
     private func showConflictCopy(_ copy: URL) {
         notice = "This note changed outside jot; that version is kept as \(copy.lastPathComponent)."
         refreshBanner()

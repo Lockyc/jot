@@ -47,7 +47,8 @@ public struct JotState: Codable, Equatable {
 
     public init() {}
 
-    /// Every field is optional on disk; a hand-edited or older file never fails the whole decode.
+    /// Every field is optional on disk; a missing or mistyped field, as from a hand edit or an
+    /// older file, never fails the whole decode. Invalid JSON does: see `NoteStore.unreadableState`.
     public init(from decoder: Decoder) throws {
         self.init()
         let c = try decoder.container(keyedBy: CodingKeys.self)
