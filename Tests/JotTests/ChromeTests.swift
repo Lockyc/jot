@@ -18,6 +18,46 @@ final class QuitTests: OffscreenTestCase {
     }
 }
 
+final class BannerTests: OffscreenTestCase {
+    /// The save that makes a conflict copy succeeds, and that success must not clear the notice.
+    func testAConflictCopyIsNamedAfterTheSaveSucceeds() throws {
+        let controller = makeController(notes: ["one"])
+        let url = controller.store.noteURL(0)
+        try Data("theirs".utf8).write(to: url)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(10)], ofItemAtPath: url.path)
+        controller.store.setText("mine", tab: 0)
+        controller.store.flushReportingResult()
+        XCTAssertFalse(controller.banner.isHidden)
+        XCTAssertTrue(controller.banner.stringValue.contains("1.conflict-"), controller.banner.stringValue)
+        // It stays through later successful saves, and goes with the next tab switch.
+        controller.store.setText("mine again", tab: 0)
+        controller.store.flushReportingResult()
+        XCTAssertFalse(controller.banner.isHidden)
+        controller.selectTab(1)
+        XCTAssertTrue(controller.banner.isHidden)
+    }
+
+    /// A save error shows over a conflict notice, and the notice comes back once saving recovers.
+    func testASaveErrorOutranksTheNoticeAndClearsAlone() throws {
+        let controller = makeController(notes: ["one"])
+        let url = controller.store.noteURL(0)
+        try Data("theirs".utf8).write(to: url)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(10)], ofItemAtPath: url.path)
+        controller.store.setText("mine", tab: 0)
+        controller.store.flushReportingResult()
+        let notice = controller.banner.stringValue
+        let folder = controller.store.folder
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path) }
+        controller.store.setText("mine again", tab: 0)
+        controller.store.flushReportingResult()
+        XCTAssertTrue(controller.banner.stringValue.contains("Can't save"), controller.banner.stringValue)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
+        controller.store.flushReportingResult()
+        XCTAssertEqual(controller.banner.stringValue, notice)
+    }
+}
+
 final class EditorViewTests: OffscreenTestCase {
     /// Every edit goes through `apply`; nothing on that path may drop the editor to TextKit 1.
     func testMultiCaretEditStaysOnTextKit2() {

@@ -11,7 +11,7 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
     private(set) var commands: [Command] = []
     private(set) var hotKeyOK = true
     private var scrollView: NSScrollView!
-    private var banner: NSTextField!
+    private(set) var banner: NSTextField!
     private var contentStack: NSStackView!
     private var statusItem: NSStatusItem!
     private var keyMonitor: Any?
@@ -123,6 +123,8 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
             case .hideApp: NSApp.hide(nil)
             case .rememberSelection: rememberSelection()
             case .switchTo(let i):
+                notice = nil
+                refreshBanner()
                 store.updateState { $0.activeTab = i }
                 if store.reloadIfChangedOnDisk(i) { discardUndo(i) }
                 loadTab(i)
@@ -331,14 +333,26 @@ final class JotController: NSObject, NSWindowDelegate, NSTextViewDelegate, NSMen
         refreshChrome()
     }
 
-    private func showSaveError(_ error: Error?) {
-        banner.stringValue = error == nil ? "" : "  Can't save to \(store.folder.path) — retrying. Your edits are kept."
-        banner.isHidden = error == nil
+    /// The banner shows a failing save over a notice; each is set and cleared on its own, so a
+    /// save that succeeds never clears a notice that save raised.
+    private var saveError: String?
+    private var notice: String?
+
+    private func refreshBanner() {
+        let text = saveError ?? notice
+        banner.stringValue = text.map { "  " + $0 } ?? ""
+        banner.isHidden = text == nil
     }
 
+    private func showSaveError(_ error: Error?) {
+        saveError = error == nil ? nil : "Can't save to \(store.folder.path) — retrying. Your edits are kept."
+        refreshBanner()
+    }
+
+    /// Stays until the next tab switch.
     private func showConflictCopy(_ copy: URL) {
-        banner.stringValue = "  This note changed outside jot; that version is kept as \(copy.lastPathComponent)."
-        banner.isHidden = false
+        notice = "This note changed outside jot; that version is kept as \(copy.lastPathComponent)."
+        refreshBanner()
     }
 
     // MARK: Status item
